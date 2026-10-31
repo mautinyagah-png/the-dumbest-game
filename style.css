@@ -1,0 +1,195 @@
+/* ============================================================
+   RESET + BASE
+   ============================================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: #0f0f14;
+  color: #e8e8ee;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   GAME CONTAINER
+   ============================================================ */
+#game {
+  width: 100%;
+  max-width: 560px;
+  padding: 48px 24px 32px;
+  text-align: center;
+  position: relative;
+}
+
+/* ============================================================
+   TOPBAR (attempt counter + clock)
+   ============================================================ */
+#topbar {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #6b6b7a;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   INSTRUCTION TEXT
+   ============================================================ */
+#instruction {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  line-height: 1.5;
+  color: #d8d8e0;
+  margin-bottom: 28px;
+  padding: 0 12px;
+  transition: opacity 0.3s;
+}
+
+/* ============================================================
+   STAGE (button + letter overlay)
+   ============================================================ */
+#stage {
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+#greenBtn {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: none;
+  background: radial-gradient(circle at 30% 30%, #5cff7a, #1a8c33);
+  color: #062a0f;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  box-shadow:
+    0 0 40px rgba(60, 220, 100, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, box-shadow 0.3s, opacity 0.3s;
+  user-select: none;
+  position: relative;
+  z-index: 2;
+  font-family: inherit;
+}
+
+#greenBtn:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 60px rgba(60, 220, 100, 0.5),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+#greenBtn:active {
+  transform: scale(0.97);
+}
+
+#greenBtn.dim {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+#greenBtn.shake {
+  animation: shake 0.4s;
+}
+
+/* The letter that flashes over the button */
+#letter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 140px;
+  font-weight: 900;
+  color: #ffcf4a;
+  text-shadow:
+    0 0 40px rgba(255, 207, 74, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 10;
+  pointer-events: none;
+  user-select: none;
+}
+
+#letter.show {
+  opacity: 1;
+}
+
+/* ============================================================
+   COUNTDOWN + FEEDBACK
+   ============================================================ */
+#countdown {
+  font-size: 42px;
+  font-weight: 700;
+  color: #ff5a7a;
+  min-height: 54px;
+  letter-spacing: 6px;
+  margin-bottom: 8px;
+}
+
+#feedback {
+  min-height: 60px;
+  font-size: 14px;
+  color: #8b8b9a;
+  font-style: italic;
+  line-height: 1.55;
+  padding: 0 8px;
+  transition: opacity 0.3s;
+}
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+#progress {
+  position: absolute;
+  bottom: 12px;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  background: #1e1e28;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#progressFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #3cff7a, #1a8c33);
+  transition: width 0.5s ease-out;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
