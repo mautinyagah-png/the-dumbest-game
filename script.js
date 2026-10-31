@@ -102,7 +102,7 @@ const themeToggleEl   = document.getElementById('themeToggle');
 const soundToggleEl   = document.getElementById('soundToggle');
 
 /* ============================================================
-   SOUND ENGINE (Web Audio API — no files needed)
+   SOUND ENGINE (Web Audio API — no files)
    ============================================================ */
 let audioCtx = null;
 let soundEnabled = localStorage.getItem('dumbgame_sound') !== 'off';
