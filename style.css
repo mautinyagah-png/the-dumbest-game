@@ -15,10 +15,13 @@
   --letter: #ffcf4a;
   --countdown: #ff5a7a;
   --progress-bg: #1e1e28;
-  --shadow: rgba(0, 0, 0, 0.4);
-  --glow: rgba(60, 220, 100, 0.35);
-  --panel-bg: rgba(15, 15, 20, 0.65);
-  --panel-border: rgba(255, 255, 255, 0.06);
+  --shadow: rgba(0, 0, 0, 0.45);
+  --glow: rgba(60, 220, 100, 0.4);
+  --panel-bg: rgba(15, 15, 20, 0.55);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --grid-line: rgba(255, 255, 255, 0.025);
+  --screw-hi: #8a8a9a;
+  --screw-lo: #22222a;
 }
 
 [data-theme="light"] {
@@ -34,10 +37,13 @@
   --letter: #f59e0b;
   --countdown: #ef4444;
   --progress-bg: #f0e6d0;
-  --shadow: rgba(80, 60, 20, 0.15);
-  --glow: rgba(34, 197, 94, 0.35);
-  --panel-bg: rgba(253, 246, 227, 0.7);
-  --panel-border: rgba(0, 0, 0, 0.06);
+  --shadow: rgba(80, 60, 20, 0.18);
+  --glow: rgba(34, 197, 94, 0.4);
+  --panel-bg: rgba(253, 246, 227, 0.62);
+  --panel-border: rgba(0, 0, 0, 0.08);
+  --grid-line: rgba(0, 0, 0, 0.025);
+  --screw-hi: #dcdcd0;
+  --screw-lo: #88887a;
 }
 
 /* ============================================================
@@ -92,34 +98,109 @@ button {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.45) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.35) 100%);
   transition: background 0.3s ease;
 }
 
 [data-theme="light"] #bgOverlay {
-  background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.15) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.1) 100%);
 }
 
 /* ============================================================
-   GAME PANEL
+   GAME PANEL — AIRPLANE DASHBOARD
    ============================================================ */
 #game {
   width: 100%;
   max-width: 520px;
-  padding: 44px 22px 28px;
+  padding: 48px 22px 32px;
   text-align: center;
   position: relative;
   z-index: 2;
   background: var(--panel-bg);
-  border-radius: 24px;
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  border-radius: 22px;
   border: 1px solid var(--panel-border);
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   user-select: none;
   -webkit-user-select: none;
-  max-height: 100%;
-  overflow-y: auto;
+  transition: background 0.3s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Dashboard grid texture */
+.panel-decor {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 22px 22px;
+  overflow: hidden;
+}
+
+/* Rivets / screws in corners */
+.screw {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--screw-hi), var(--screw-lo));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.screw.tl { top: 12px; left: 12px; }
+.screw.tr { top: 12px; right: 12px; }
+.screw.bl { bottom: 12px; left: 12px; }
+.screw.br { bottom: 12px; right: 12px; }
+
+.panel-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================
+   RED DENY OVERLAY
+   ============================================================ */
+#denyOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 40, 40, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 50;
+}
+
+#game.denied {
+  border-color: rgba(255, 60, 60, 0.8);
+  animation: denyShake 0.55s ease-out;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 100px rgba(255, 40, 40, 0.55),
+    0 0 0 2px rgba(255, 70, 70, 0.55),
+    inset 0 0 60px rgba(255, 40, 40, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+#game.denied #denyOverlay {
+  opacity: 1;
+}
+
+@keyframes denyShake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  12%      { transform: translateX(-10px) rotate(-0.6deg); }
+  28%      { transform: translateX(11px) rotate(0.6deg); }
+  44%      { transform: translateX(-9px) rotate(-0.4deg); }
+  60%      { transform: translateX(8px) rotate(0.3deg); }
+  76%      { transform: translateX(-4px); }
+  90%      { transform: translateX(3px); }
 }
 
 /* ============================================================
@@ -127,7 +208,7 @@ button {
    ============================================================ */
 #topbar {
   position: absolute;
-  top: 12px;
+  top: 14px;
   left: 20px;
   right: 20px;
   display: flex;
@@ -137,12 +218,41 @@ button {
   color: var(--text-dim);
   letter-spacing: 0.5px;
   gap: 12px;
+  z-index: 3;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Status LED */
+.led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.led.danger {
+  background: #ff2b2b;
+  box-shadow: 0 0 12px #ff2b2b;
+  animation: ledBlink 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes ledBlink {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
 }
 
 .icon-btn {
@@ -182,50 +292,65 @@ button {
    ============================================================ */
 #stage {
   position: relative;
-  height: min(180px, 30vh);
+  height: min(200px, 32vh);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 14px;
 }
 
+/* ============================================================
+   THE 3D PRESS BUTTON
+   ============================================================ */
 #greenBtn {
-  width: min(140px, 38vw);
-  height: min(140px, 38vw);
+  width: min(150px, 40vw);
+  height: min(150px, 40vw);
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 30% 30%, var(--accent-light), var(--accent-dark));
+  background: radial-gradient(circle at 32% 28%, var(--accent-light), var(--accent-dark));
   color: #062a0f;
   font-size: min(14px, 3.4vw);
   font-weight: 800;
   letter-spacing: 1.5px;
   cursor: pointer;
-  box-shadow:
-    0 0 40px var(--glow),
-    0 8px 24px var(--shadow),
-    inset 0 2px 8px rgba(255, 255, 255, 0.25),
-    inset 0 -4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s ease, box-shadow 0.3s ease, opacity 0.3s ease;
   user-select: none;
   position: relative;
   z-index: 2;
+  /* THE 3D BEVEL — outer dark edge + drop shadow + inner highlights */
+  box-shadow:
+    0 9px 0 var(--accent-dark),              /* solid bezel below */
+    0 14px 24px var(--shadow),               /* soft cast shadow */
+    0 0 40px var(--glow),                    /* outer glow */
+    inset 0 3px 5px rgba(255, 255, 255, 0.4),  /* top inner highlight */
+    inset 0 -7px 12px rgba(0, 0, 0, 0.22);     /* bottom inner shadow */
+  transform: translateY(0);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
 }
 
 #greenBtn:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
   box-shadow:
-    0 0 60px var(--glow),
-    0 8px 24px var(--shadow),
-    inset 0 2px 8px rgba(255, 255, 255, 0.3),
-    inset 0 -4px 12px rgba(0, 0, 0, 0.15);
+    0 11px 0 var(--accent-dark),
+    0 16px 26px var(--shadow),
+    0 0 55px var(--glow),
+    inset 0 3px 5px rgba(255, 255, 255, 0.45),
+    inset 0 -7px 12px rgba(0, 0, 0, 0.22);
 }
 
-#greenBtn:active {
-  transform: scale(0.96);
+/* PRESSED IN — center sinks, bezel compresses */
+#greenBtn:active,
+#greenBtn.pressed {
+  transform: translateY(7px);
+  box-shadow:
+    0 2px 0 var(--accent-dark),              /* bezel compressed */
+    0 3px 8px var(--shadow),                 /* tight shadow */
+    0 0 20px var(--glow),
+    inset 0 6px 12px rgba(0, 0, 0, 0.45),    /* deep depression */
+    inset 0 -2px 4px rgba(255, 255, 255, 0.15);
 }
 
 #greenBtn.pulse {
-  animation: pulse 2.4s ease-in-out infinite;
+  animation: pulseGlow 2.4s ease-in-out infinite;
 }
 
 #greenBtn.dim {
@@ -237,6 +362,58 @@ button {
   animation: shake 0.4s;
 }
 
+#greenBtn.denied {
+  background: radial-gradient(circle at 32% 28%, #ff7a7a, #a00c0c);
+  color: #ffffff;
+  box-shadow:
+    0 9px 0 #6a0808,
+    0 14px 24px var(--shadow),
+    0 0 80px rgba(255, 50, 50, 0.75),
+    inset 0 3px 5px rgba(255, 255, 255, 0.35),
+    inset 0 -7px 12px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.18); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  20%      { transform: translateY(0) translateX(-8px); }
+  40%      { transform: translateY(0) translateX(8px); }
+  60%      { transform: translateY(0) translateX(-5px); }
+  80%      { transform: translateY(0) translateX(5px); }
+}
+
+/* ============================================================
+   DANGER "!" MARKS
+   ============================================================ */
+.danger-mark {
+  position: absolute;
+  font-size: 60px;
+  font-weight: 900;
+  color: #ff2b2b;
+  text-shadow:
+    0 0 16px #ff2b2b,
+    0 0 32px rgba(255, 40, 40, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 20;
+  transform-origin: center;
+  animation: dangerPop 1.2s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+
+@keyframes dangerPop {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-15deg); }
+  20%  { opacity: 1; transform: scale(1.3) rotate(6deg); }
+  40%  { transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(0.9) translateY(-30px); }
+}
+
+/* ============================================================
+   LETTER OVERLAY
+   ============================================================ */
 #letter {
   position: absolute;
   top: 50%;
@@ -286,7 +463,7 @@ button {
    ============================================================ */
 #progress {
   position: absolute;
-  bottom: 8px;
+  bottom: 10px;
   left: 20px;
   right: 20px;
   height: 3px;
@@ -303,42 +480,18 @@ button {
 }
 
 /* ============================================================
-   ANIMATIONS
-   ============================================================ */
-@keyframes pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 40px var(--glow),
-      0 8px 24px var(--shadow),
-      inset 0 2px 8px rgba(255, 255, 255, 0.25),
-      inset 0 -4px 12px rgba(0, 0, 0, 0.15);
-  }
-  50% {
-    box-shadow:
-      0 0 70px var(--glow),
-      0 8px 24px var(--shadow),
-      inset 0 2px 8px rgba(255, 255, 255, 0.35),
-      inset 0 -4px 12px rgba(0, 0, 0, 0.15);
-  }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-8px); }
-  40%      { transform: translateX(8px); }
-  60%      { transform: translateX(-5px); }
-  80%      { transform: translateX(5px); }
-}
-
-/* ============================================================
    MOBILE TWEAKS
    ============================================================ */
 @media (max-width: 480px) {
   #instruction { font-size: 15px; min-height: 60px; margin-bottom: 16px; }
   #topbar { font-size: 11px; top: 10px; left: 16px; right: 16px; }
-  #game { padding: 40px 16px 24px; }
+  #game { padding: 44px 16px 28px; }
   #progress { left: 16px; right: 16px; }
   #feedback { font-size: 12px; }
+  .screw.tl { top: 10px; left: 10px; }
+  .screw.tr { top: 10px; right: 10px; }
+  .screw.bl { bottom: 10px; left: 10px; }
+  .screw.br { bottom: 10px; right: 10px; }
 }
 
 /* ============================================================
