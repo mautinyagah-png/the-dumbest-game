@@ -1,4 +1,40 @@
 /* ============================================================
+   THEME VARIABLES
+   ============================================================ */
+:root,
+[data-theme="dark"] {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --text: #e8e8ee;
+  --text-dim: #6b6b7a;
+  --text-mute: #8b8b9a;
+  --accent: #3cff7a;
+  --accent-dark: #1a8c33;
+  --accent-light: #5cff7a;
+  --letter: #ffcf4a;
+  --countdown: #ff5a7a;
+  --progress-bg: #1e1e28;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --glow: rgba(60, 220, 100, 0.35);
+}
+
+[data-theme="light"] {
+  --bg: #fdf6e3;
+  --surface: #ffffff;
+  --text: #2a2a35;
+  --text-dim: #8888a0;
+  --text-mute: #6b6b80;
+  --accent: #22c55e;
+  --accent-dark: #16a34a;
+  --accent-light: #4ade80;
+  --letter: #f59e0b;
+  --countdown: #ef4444;
+  --progress-bg: #f0e6d0;
+  --shadow: rgba(80, 60, 20, 0.15);
+  --glow: rgba(34, 197, 94, 0.35);
+}
+
+/* ============================================================
    RESET + BASE
    ============================================================ */
 * {
@@ -10,16 +46,24 @@
 html,
 body {
   height: 100%;
-  background: #0f0f14;
-  color: #e8e8ee;
+  background: var(--bg);
+  color: var(--text);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   overflow: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 body {
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
 }
 
 /* ============================================================
@@ -28,13 +72,16 @@ body {
 #game {
   width: 100%;
   max-width: 560px;
-  padding: 48px 24px 32px;
+  padding: max(24px, env(safe-area-inset-top)) 24px
+           max(24px, env(safe-area-inset-bottom));
   text-align: center;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ============================================================
-   TOPBAR (attempt counter + clock)
+   TOPBAR
    ============================================================ */
 #topbar {
   position: absolute;
@@ -43,13 +90,37 @@ body {
   right: 24px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 13px;
-  color: #6b6b7a;
+  color: var(--text-dim);
   letter-spacing: 0.5px;
+  gap: 12px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  color: var(--text);
+}
+
+.icon-btn:hover {
+  background: var(--surface);
 }
 
 /* ============================================================
-   INSTRUCTION TEXT
+   INSTRUCTION
    ============================================================ */
 #instruction {
   min-height: 90px;
@@ -58,18 +129,18 @@ body {
   justify-content: center;
   font-size: 19px;
   line-height: 1.5;
-  color: #d8d8e0;
-  margin-bottom: 28px;
-  padding: 0 12px;
+  color: var(--text);
+  margin-bottom: 24px;
+  padding: 0 8px;
   transition: opacity 0.3s;
 }
 
 /* ============================================================
-   STAGE (button + letter overlay)
+   STAGE
    ============================================================ */
 #stage {
   position: relative;
-  height: 220px;
+  height: min(220px, 38vh);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,35 +148,42 @@ body {
 }
 
 #greenBtn {
-  width: 150px;
-  height: 150px;
+  width: min(150px, 40vw);
+  height: min(150px, 40vw);
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 30% 30%, #5cff7a, #1a8c33);
+  background: radial-gradient(circle at 30% 30%, var(--accent-light), var(--accent-dark));
   color: #062a0f;
-  font-size: 15px;
+  font-size: min(15px, 3.6vw);
   font-weight: 800;
   letter-spacing: 1.5px;
   cursor: pointer;
   box-shadow:
-    0 0 40px rgba(60, 220, 100, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s, box-shadow 0.3s, opacity 0.3s;
+    0 0 40px var(--glow),
+    0 8px 24px var(--shadow),
+    inset 0 2px 8px rgba(255, 255, 255, 0.25),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.3s ease, opacity 0.3s ease;
   user-select: none;
   position: relative;
   z-index: 2;
-  font-family: inherit;
 }
 
 #greenBtn:hover {
   transform: scale(1.05);
   box-shadow:
-    0 0 60px rgba(60, 220, 100, 0.5),
-    0 8px 24px rgba(0, 0, 0, 0.4);
+    0 0 60px var(--glow),
+    0 8px 24px var(--shadow),
+    inset 0 2px 8px rgba(255, 255, 255, 0.3),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15);
 }
 
 #greenBtn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
+}
+
+#greenBtn.pulse {
+  animation: pulse 2.4s ease-in-out infinite;
 }
 
 #greenBtn.dim {
@@ -117,20 +195,19 @@ body {
   animation: shake 0.4s;
 }
 
-/* The letter that flashes over the button */
 #letter {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 140px;
+  font-size: min(140px, 34vw);
   font-weight: 900;
-  color: #ffcf4a;
+  color: var(--letter);
   text-shadow:
-    0 0 40px rgba(255, 207, 74, 0.6),
-    0 4px 12px rgba(0, 0, 0, 0.6);
+    0 0 40px var(--letter),
+    0 4px 12px rgba(0, 0, 0, 0.5);
   opacity: 0;
-  transition: opacity 0.12s;
+  transition: opacity 0.15s;
   z-index: 10;
   pointer-events: none;
   user-select: none;
@@ -144,9 +221,9 @@ body {
    COUNTDOWN + FEEDBACK
    ============================================================ */
 #countdown {
-  font-size: 42px;
+  font-size: min(42px, 11vw);
   font-weight: 700;
-  color: #ff5a7a;
+  color: var(--countdown);
   min-height: 54px;
   letter-spacing: 6px;
   margin-bottom: 8px;
@@ -155,7 +232,7 @@ body {
 #feedback {
   min-height: 60px;
   font-size: 14px;
-  color: #8b8b9a;
+  color: var(--text-mute);
   font-style: italic;
   line-height: 1.55;
   padding: 0 8px;
@@ -167,11 +244,11 @@ body {
    ============================================================ */
 #progress {
   position: absolute;
-  bottom: 12px;
+  bottom: 8px;
   left: 24px;
   right: 24px;
   height: 3px;
-  background: #1e1e28;
+  background: var(--progress-bg);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -179,17 +256,55 @@ body {
 #progressFill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #3cff7a, #1a8c33);
+  background: linear-gradient(90deg, var(--accent-light), var(--accent-dark));
   transition: width 0.5s ease-out;
 }
 
 /* ============================================================
    ANIMATIONS
    ============================================================ */
+@keyframes pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 40px var(--glow),
+      0 8px 24px var(--shadow),
+      inset 0 2px 8px rgba(255, 255, 255, 0.25),
+      inset 0 -4px 12px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 70px var(--glow),
+      0 8px 24px var(--shadow),
+      inset 0 2px 8px rgba(255, 255, 255, 0.35),
+      inset 0 -4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20%      { transform: translateX(-8px); }
   40%      { transform: translateX(8px); }
   60%      { transform: translateX(-5px); }
   80%      { transform: translateX(5px); }
+}
+
+/* ============================================================
+   MOBILE TWEAKS
+   ============================================================ */
+@media (max-width: 480px) {
+  #instruction { font-size: 16px; min-height: 80px; }
+  #topbar { font-size: 12px; top: 12px; left: 16px; right: 16px; }
+  #game { padding-left: 16px; padding-right: 16px; }
+  #progress { left: 16px; right: 16px; }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
