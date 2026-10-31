@@ -10,18 +10,25 @@
   --text-dim: #6b6b7a;
   --text-mute: #8b8b9a;
   --accent: #3cff7a;
-  --accent-dark: #1a8c33;
-  --accent-light: #5cff7a;
+  --accent-dark: #0a5024;
+  --accent-mid: #22c55e;
+  --accent-light: #7fff9e;
   --letter: #ffcf4a;
   --countdown: #ff5a7a;
-  --progress-bg: #1e1e28;
-  --shadow: rgba(0, 0, 0, 0.45);
-  --glow: rgba(60, 220, 100, 0.4);
-  --panel-bg: rgba(15, 15, 20, 0.55);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --grid-line: rgba(255, 255, 255, 0.025);
-  --screw-hi: #8a8a9a;
-  --screw-lo: #22222a;
+  --progress-bg: rgba(0,0,0,0.4);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --glow: rgba(60, 220, 100, 0.55);
+  --panel-bg: rgba(15, 15, 20, 0.62);
+  --panel-border: rgba(255, 255, 255, 0.1);
+  --screw-hi: #9a9aaa;
+  --screw-lo: #1a1a22;
+  --socket-bg: radial-gradient(circle at 50% 45%, #05050a 0%, #0a0a10 55%, #000 100%);
+  --metal-1: #6a6a72;
+  --metal-2: #3a3a42;
+  --metal-3: #2a2a32;
+  --warning-yellow: #ffcc33;
+  --warning-black: #1a1a1a;
+  --danger: #ff2b2b;
 }
 
 [data-theme="light"] {
@@ -32,18 +39,25 @@
   --text-dim: #8888a0;
   --text-mute: #6b6b80;
   --accent: #22c55e;
-  --accent-dark: #16a34a;
-  --accent-light: #4ade80;
+  --accent-dark: #14532d;
+  --accent-mid: #16a34a;
+  --accent-light: #86efac;
   --letter: #f59e0b;
   --countdown: #ef4444;
-  --progress-bg: #f0e6d0;
-  --shadow: rgba(80, 60, 20, 0.18);
-  --glow: rgba(34, 197, 94, 0.4);
-  --panel-bg: rgba(253, 246, 227, 0.62);
-  --panel-border: rgba(0, 0, 0, 0.08);
-  --grid-line: rgba(0, 0, 0, 0.025);
-  --screw-hi: #dcdcd0;
-  --screw-lo: #88887a;
+  --progress-bg: rgba(0,0,0,0.15);
+  --shadow: rgba(80, 60, 20, 0.2);
+  --glow: rgba(34, 197, 94, 0.5);
+  --panel-bg: rgba(253, 246, 227, 0.72);
+  --panel-border: rgba(0, 0, 0, 0.12);
+  --screw-hi: #e0e0d0;
+  --screw-lo: #7a7a68;
+  --socket-bg: radial-gradient(circle at 50% 45%, #2a2820 0%, #1a1810 55%, #0d0c08 100%);
+  --metal-1: #a8a8a0;
+  --metal-2: #7a7a72;
+  --metal-3: #5a5a52;
+  --warning-yellow: #d4a017;
+  --warning-black: #2a2a2a;
+  --danger: #dc2626;
 }
 
 /* ============================================================
@@ -98,61 +112,64 @@ button {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.35) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.4) 100%);
   transition: background 0.3s ease;
 }
 
 [data-theme="light"] #bgOverlay {
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.1) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.12) 100%);
 }
 
 /* ============================================================
-   GAME PANEL — AIRPLANE DASHBOARD
+   GAME PANEL — 3D CONTROL CONSOLE
    ============================================================ */
 #game {
   width: 100%;
   max-width: 520px;
-  padding: 48px 22px 32px;
+  padding: 48px 22px 30px;
   text-align: center;
   position: relative;
   z-index: 2;
-  background: var(--panel-bg);
-  backdrop-filter: blur(22px) saturate(1.3);
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  border-radius: 22px;
-  border: 1px solid var(--panel-border);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 110%, rgba(0, 0, 0, 0.5) 0%, transparent 55%),
+    var(--panel-bg);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border-radius: 20px;
+  border: 2px solid var(--panel-border);
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    inset 0 2px 4px rgba(255, 255, 255, 0.08),
+    inset 0 -6px 20px rgba(0, 0, 0, 0.35),
+    0 24px 70px rgba(0, 0, 0, 0.45);
   user-select: none;
   -webkit-user-select: none;
   transition: background 0.3s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-/* Dashboard grid texture */
-.panel-decor {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 22px 22px;
   overflow: hidden;
 }
 
-/* Rivets / screws in corners */
+/* Corner screws */
 .screw {
   position: absolute;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, var(--screw-hi), var(--screw-lo));
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.5);
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+}
+.screw::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 1px;
+  background: rgba(0,0,0,0.55);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
 }
 .screw.tl { top: 12px; left: 12px; }
 .screw.tr { top: 12px; right: 12px; }
@@ -165,52 +182,13 @@ button {
 }
 
 /* ============================================================
-   RED DENY OVERLAY
-   ============================================================ */
-#denyOverlay {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: rgba(255, 40, 40, 0.28);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.12s ease;
-  z-index: 50;
-}
-
-#game.denied {
-  border-color: rgba(255, 60, 60, 0.8);
-  animation: denyShake 0.55s ease-out;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 0 100px rgba(255, 40, 40, 0.55),
-    0 0 0 2px rgba(255, 70, 70, 0.55),
-    inset 0 0 60px rgba(255, 40, 40, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-#game.denied #denyOverlay {
-  opacity: 1;
-}
-
-@keyframes denyShake {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  12%      { transform: translateX(-10px) rotate(-0.6deg); }
-  28%      { transform: translateX(11px) rotate(0.6deg); }
-  44%      { transform: translateX(-9px) rotate(-0.4deg); }
-  60%      { transform: translateX(8px) rotate(0.3deg); }
-  76%      { transform: translateX(-4px); }
-  90%      { transform: translateX(3px); }
-}
-
-/* ============================================================
    TOPBAR
    ============================================================ */
 #topbar {
   position: absolute;
   top: 14px;
-  left: 20px;
-  right: 20px;
+  left: 22px;
+  right: 22px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -233,25 +211,24 @@ button {
   gap: 4px;
 }
 
-/* Status LED */
 .led {
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 6px #22c55e;
+  box-shadow: 0 0 8px #22c55e;
   transition: background 0.2s, box-shadow 0.2s;
 }
 
 .led.danger {
-  background: #ff2b2b;
-  box-shadow: 0 0 12px #ff2b2b;
-  animation: ledBlink 0.25s ease-in-out infinite alternate;
+  background: var(--danger);
+  box-shadow: 0 0 14px var(--danger);
+  animation: ledBlink 0.18s ease-in-out infinite alternate;
 }
 
 @keyframes ledBlink {
-  from { opacity: 0.55; }
+  from { opacity: 0.4; }
   to   { opacity: 1; }
 }
 
@@ -275,82 +252,204 @@ button {
    INSTRUCTION
    ============================================================ */
 #instruction {
-  min-height: 70px;
+  min-height: 66px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.5;
   color: var(--text);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   padding: 0 6px;
   transition: opacity 0.3s;
 }
 
 /* ============================================================
-   STAGE
+   STAGE — RECESSED 3D SOCKET
    ============================================================ */
 #stage {
   position: relative;
-  height: min(200px, 32vh);
+  width: min(260px, 72vw);
+  height: min(260px, 72vw);
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: var(--socket-bg);
+  box-shadow:
+    inset 0 12px 28px rgba(0, 0, 0, 0.85),
+    inset 0 -6px 16px rgba(255, 255, 255, 0.03),
+    inset 0 0 0 3px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.05),
+    0 -1px 0 rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+/* Inner ring highlight on the socket (top edge catches light) */
+#stage::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+  z-index: 1;
+}
+
+#socketInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
+}
+
+#letterLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
 }
 
 /* ============================================================
-   THE 3D PRESS BUTTON
+   COUNTDOWN RING (SVG)
    ============================================================ */
+#countdownRing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  height: 90%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 5;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 691;    /* 2πr where r=110 */
+  stroke-dashoffset: 691;   /* fully drained initially */
+  transform: rotate(-90deg);
+  transform-origin: center;
+  filter: drop-shadow(0 0 6px var(--accent));
+  transition: stroke 0.2s;
+}
+
+/* ============================================================
+   NUCLEAR LAUNCH BUTTON
+   ============================================================ */
+.btn-warning-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  height: 62%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--warning-yellow) 0deg 14deg,
+    var(--warning-black) 14deg 28deg
+  );
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.4),
+    inset 0 0 6px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+  opacity: 0.95;
+}
+
 #greenBtn {
-  width: min(150px, 40vw);
-  height: min(150px, 40vw);
+  position: relative;
+  width: 48%;
+  height: 48%;
   border-radius: 50%;
   border: none;
-  background: radial-gradient(circle at 32% 28%, var(--accent-light), var(--accent-dark));
-  color: #062a0f;
-  font-size: min(14px, 3.4vw);
-  font-weight: 800;
-  letter-spacing: 1.5px;
   cursor: pointer;
   user-select: none;
-  position: relative;
-  z-index: 2;
-  /* THE 3D BEVEL — outer dark edge + drop shadow + inner highlights */
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 35% 28%, var(--accent-light) 0%, var(--accent-mid) 32%, var(--accent-dark) 78%, #000 100%);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(11px, 3.2vw, 15px);
+  letter-spacing: 2px;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 10px rgba(255, 255, 255, 0.25);
+  /* THE 3D DOME + BEZEL */
   box-shadow:
-    0 9px 0 var(--accent-dark),              /* solid bezel below */
-    0 14px 24px var(--shadow),               /* soft cast shadow */
-    0 0 40px var(--glow),                    /* outer glow */
-    inset 0 3px 5px rgba(255, 255, 255, 0.4),  /* top inner highlight */
-    inset 0 -7px 12px rgba(0, 0, 0, 0.22);     /* bottom inner shadow */
+    /* metallic bezel edge (raised ring) */
+    0 8px 0 #041a0a,
+    0 10px 0 #071a0b,
+    /* dome highlights */
+    inset 0 -10px 18px rgba(0, 0, 0, 0.55),
+    inset 0 10px 16px rgba(255, 255, 255, 0.35),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.3),
+    /* outer cast shadow + glow */
+    0 16px 28px rgba(0, 0, 0, 0.6),
+    0 0 44px var(--glow);
   transform: translateY(0);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+}
+
+#greenBtn::before {
+  /* glossy dome highlight */
+  content: '';
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 42%;
+  height: 32%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.5), transparent 70%);
+  pointer-events: none;
+  filter: blur(2px);
 }
 
 #greenBtn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow:
-    0 11px 0 var(--accent-dark),
-    0 16px 26px var(--shadow),
-    0 0 55px var(--glow),
-    inset 0 3px 5px rgba(255, 255, 255, 0.45),
-    inset 0 -7px 12px rgba(0, 0, 0, 0.22);
+    0 9px 0 #041a0a,
+    0 11px 0 #071a0b,
+    inset 0 -10px 18px rgba(0, 0, 0, 0.55),
+    inset 0 10px 16px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.3),
+    0 18px 30px rgba(0, 0, 0, 0.6),
+    0 0 60px var(--glow);
 }
 
-/* PRESSED IN — center sinks, bezel compresses */
+/* PRESSED IN — deep depression */
 #greenBtn:active,
 #greenBtn.pressed {
   transform: translateY(7px);
   box-shadow:
-    0 2px 0 var(--accent-dark),              /* bezel compressed */
-    0 3px 8px var(--shadow),                 /* tight shadow */
-    0 0 20px var(--glow),
-    inset 0 6px 12px rgba(0, 0, 0, 0.45),    /* deep depression */
-    inset 0 -2px 4px rgba(255, 255, 255, 0.15);
+    0 1px 0 #041a0a,
+    0 2px 0 #071a0b,
+    inset 0 8px 20px rgba(0, 0, 0, 0.7),
+    inset 0 -4px 8px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 20px var(--glow);
 }
 
 #greenBtn.pulse {
-  animation: pulseGlow 2.4s ease-in-out infinite;
+  animation: domeGlow 2.4s ease-in-out infinite;
 }
 
 #greenBtn.dim {
@@ -363,93 +462,66 @@ button {
 }
 
 #greenBtn.denied {
-  background: radial-gradient(circle at 32% 28%, #ff7a7a, #a00c0c);
-  color: #ffffff;
+  background: radial-gradient(circle at 35% 28%, #ff9a9a 0%, #ff2b2b 35%, #991111 78%, #3a0000 100%);
   box-shadow:
-    0 9px 0 #6a0808,
-    0 14px 24px var(--shadow),
-    0 0 80px rgba(255, 50, 50, 0.75),
-    inset 0 3px 5px rgba(255, 255, 255, 0.35),
-    inset 0 -7px 12px rgba(0, 0, 0, 0.4);
+    0 8px 0 #4a0000,
+    0 10px 0 #3a0000,
+    inset 0 -10px 18px rgba(0, 0, 0, 0.6),
+    inset 0 10px 16px rgba(255, 255, 255, 0.35),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.4),
+    0 16px 28px rgba(0, 0, 0, 0.6),
+    0 0 90px rgba(255, 40, 40, 0.95),
+    0 0 140px rgba(255, 40, 40, 0.7);
 }
 
-@keyframes pulseGlow {
+@keyframes domeGlow {
   0%, 100% { filter: brightness(1); }
-  50%      { filter: brightness(1.18); }
+  50%      { filter: brightness(1.22); }
 }
 
 @keyframes shake {
   0%, 100% { transform: translateY(0) translateX(0); }
-  20%      { transform: translateY(0) translateX(-8px); }
-  40%      { transform: translateY(0) translateX(8px); }
-  60%      { transform: translateY(0) translateX(-5px); }
-  80%      { transform: translateY(0) translateX(5px); }
+  15%      { transform: translateY(0) translateX(-10px); }
+  30%      { transform: translateY(0) translateX(10px); }
+  45%      { transform: translateY(0) translateX(-8px); }
+  60%      { transform: translateY(0) translateX(8px); }
+  75%      { transform: translateY(0) translateX(-4px); }
+  90%      { transform: translateY(0) translateX(2px); }
 }
 
 /* ============================================================
-   DANGER "!" MARKS
+   BOUNCING LETTERS
    ============================================================ */
-.danger-mark {
+.bouncing-letter {
   position: absolute;
-  font-size: 60px;
-  font-weight: 900;
-  color: #ff2b2b;
-  text-shadow:
-    0 0 16px #ff2b2b,
-    0 0 32px rgba(255, 40, 40, 0.7),
-    0 2px 4px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  z-index: 20;
-  transform-origin: center;
-  animation: dangerPop 1.2s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
-}
-
-@keyframes dangerPop {
-  0%   { opacity: 0; transform: scale(0.2) rotate(-15deg); }
-  20%  { opacity: 1; transform: scale(1.3) rotate(6deg); }
-  40%  { transform: scale(1) rotate(0deg); }
-  100% { opacity: 0; transform: scale(0.9) translateY(-30px); }
-}
-
-/* ============================================================
-   LETTER OVERLAY
-   ============================================================ */
-#letter {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: min(130px, 32vw);
   font-weight: 900;
   color: var(--letter);
   text-shadow:
-    0 0 40px var(--letter),
-    0 4px 12px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 10;
+    0 0 20px var(--letter),
+    0 0 40px rgba(255, 207, 74, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   user-select: none;
-}
-
-#letter.show {
-  opacity: 1;
+  will-change: transform;
+  z-index: 10;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 /* ============================================================
    COUNTDOWN + FEEDBACK
    ============================================================ */
 #countdown {
-  font-size: min(38px, 10vw);
-  font-weight: 700;
+  font-size: min(30px, 8vw);
+  font-weight: 800;
   color: var(--countdown);
-  min-height: 44px;
-  letter-spacing: 6px;
-  margin-bottom: 6px;
+  min-height: 38px;
+  letter-spacing: 8px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 12px rgba(255, 90, 122, 0.5);
 }
 
 #feedback {
-  min-height: 50px;
+  min-height: 46px;
   font-size: 13px;
   color: var(--text-mute);
   font-style: italic;
@@ -464,8 +536,8 @@ button {
 #progress {
   position: absolute;
   bottom: 10px;
-  left: 20px;
-  right: 20px;
+  left: 22px;
+  right: 22px;
   height: 3px;
   background: var(--progress-bg);
   border-radius: 2px;
@@ -480,18 +552,128 @@ button {
 }
 
 /* ============================================================
+   DENIAL OVERLAY — MAXIMUM DRAMA
+   ============================================================ */
+#denyOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 40, 40, 0.08) 0px,
+      rgba(255, 40, 40, 0.08) 2px,
+      transparent 2px,
+      transparent 4px
+    ),
+    radial-gradient(ellipse at center, rgba(255, 30, 30, 0.5), rgba(255, 0, 0, 0.15) 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.05s ease;
+  z-index: 50;
+  mix-blend-mode: screen;
+}
+
+#game.denied {
+  border-color: var(--danger);
+  animation: denyShake 0.6s cubic-bezier(.36,.07,.19,.97);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.08),
+    inset 0 0 80px rgba(255, 40, 40, 0.4),
+    0 0 60px rgba(255, 40, 40, 0.7),
+    0 0 120px rgba(255, 40, 40, 0.5),
+    0 0 0 3px rgba(255, 60, 60, 0.85),
+    0 24px 70px rgba(0, 0, 0, 0.6);
+}
+
+#game.denied #denyOverlay {
+  opacity: 1;
+}
+
+#game.denied .screw {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    0 0 8px var(--danger);
+}
+
+#denyX {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.2) rotate(-15deg);
+  font-size: clamp(120px, 32vw, 200px);
+  font-weight: 900;
+  color: var(--danger);
+  text-shadow:
+    0 0 30px var(--danger),
+    0 0 80px rgba(255, 40, 40, 0.9),
+    0 0 140px rgba(255, 40, 40, 0.6),
+    0 4px 8px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 60;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+#game.denied #denyX {
+  animation: xFlash 0.9s cubic-bezier(0.15, 1.6, 0.4, 1) forwards;
+}
+
+@keyframes xFlash {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-15deg); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.4) rotate(8deg); }
+  35%  { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+  55%  { transform: translate(-50%, -50%) scale(1.1) rotate(2deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3) rotate(0deg); }
+}
+
+@keyframes denyShake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  10%      { transform: translate(-12px, -2px) rotate(-0.7deg); }
+  25%      { transform: translate(13px, 3px) rotate(0.7deg); }
+  40%      { transform: translate(-11px, 2px) rotate(-0.5deg); }
+  55%      { transform: translate(9px, -2px) rotate(0.4deg); }
+  70%      { transform: translate(-6px, 1px) rotate(-0.2deg); }
+  85%      { transform: translate(4px, -1px) rotate(0.1deg); }
+}
+
+/* Danger "!" marks */
+.danger-mark {
+  position: absolute;
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--danger);
+  text-shadow:
+    0 0 12px var(--danger),
+    0 0 24px rgba(255, 40, 40, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: 55;
+  animation: dangerPop 1s cubic-bezier(0.2, 1.6, 0.4, 1) forwards;
+}
+
+@keyframes dangerPop {
+  0%   { opacity: 0; transform: scale(0.2) rotate(-20deg); }
+  20%  { opacity: 1; transform: scale(1.35) rotate(8deg); }
+  45%  { transform: scale(1) rotate(-3deg); }
+  100% { opacity: 0; transform: scale(0.9) translateY(-40px) rotate(0); }
+}
+
+/* ============================================================
    MOBILE TWEAKS
    ============================================================ */
 @media (max-width: 480px) {
-  #instruction { font-size: 15px; min-height: 60px; margin-bottom: 16px; }
-  #topbar { font-size: 11px; top: 10px; left: 16px; right: 16px; }
-  #game { padding: 44px 16px 28px; }
+  #instruction { font-size: 14px; min-height: 56px; margin-bottom: 10px; }
+  #topbar { font-size: 11px; top: 10px; left: 18px; right: 18px; }
+  #game { padding: 44px 16px 26px; }
   #progress { left: 16px; right: 16px; }
   #feedback { font-size: 12px; }
-  .screw.tl { top: 10px; left: 10px; }
-  .screw.tr { top: 10px; right: 10px; }
-  .screw.bl { bottom: 10px; left: 10px; }
-  .screw.br { bottom: 10px; right: 10px; }
+  .screw { width: 6px; height: 6px; }
+  .screw::after { width: 3px; }
+  .screw.tl { top: 9px; left: 9px; }
+  .screw.tr { top: 9px; right: 9px; }
+  .screw.bl { bottom: 9px; left: 9px; }
+  .screw.br { bottom: 9px; right: 9px; }
 }
 
 /* ============================================================
