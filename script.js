@@ -1,23 +1,60 @@
 /* ============================================================
    LEVELS
+   ------------------------------------------------------------
+   Each normal level has:
+     - prompt          : what the player reads
+     - requiredPresses : exact number of clicks to PASS (0, 1, 2, ...)
+     - show            : single bouncing item (letter or emoji)
+     - sequence        : array of bouncing items (overlapping)
    ============================================================ */
 const LEVELS = [
   { kind: 'start', prompt: 'Click the green button to begin.' },
 
-  { kind: 'normal', prompt: 'If you see the letter D in the next countdown, press me.',
-    correctAction: 'press', letter: 'D' },
-  { kind: 'normal', prompt: 'If you see the letter D in the next countdown, press me.',
-    correctAction: 'no-press', letter: 'O' },
-  { kind: 'normal', prompt: 'If you see the letter D, press me. Look closely.',
-    correctAction: 'press', letter: 'D' },
+  /* ---- Chapter 1: single letters ---- */
   { kind: 'normal', prompt: 'If you see the letter D, press me.',
-    correctAction: 'no-press', letter: 'Q' },
+    requiredPresses: 1, show: 'D' },
+  { kind: 'normal', prompt: 'If you see the letter D, press me.',
+    requiredPresses: 0, show: 'O' },
+  { kind: 'normal', prompt: 'If you see the letter D, press me.',
+    requiredPresses: 1, show: 'D' },
+  { kind: 'normal', prompt: 'If you see the letter D, press me.',
+    requiredPresses: 0, show: 'Q' },
 
-  { kind: 'normal', prompt: 'If you see the letter D, press me. Watch the sequence.',
-    correctAction: 'press', sequence: ['O', 'C', 'D', 'Q'] },
-  { kind: 'normal', prompt: 'If you see the letter D, press me. One more.',
-    correctAction: 'no-press', sequence: ['B', 'O', 'G', 'P'] },
+  /* ---- Chapter 2: sequences ---- */
+  { kind: 'normal', prompt: 'If the sequence contains D, press me once.',
+    requiredPresses: 1, sequence: ['O', 'C', 'D', 'Q'] },
+  { kind: 'normal', prompt: 'If the sequence contains D, press me once.',
+    requiredPresses: 0, sequence: ['B', 'O', 'G', 'P'] },
 
+  /* ---- Chapter 3: emoji introduction ---- */
+  { kind: 'normal', prompt: 'If you see a rat 🐀, don\'t press.',
+    requiredPresses: 0, show: '🐀' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, press me once. Otherwise don\'t.',
+    requiredPresses: 1, show: '🐈' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, press me TWICE.',
+    requiredPresses: 2, show: '🐀' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, press me TWICE. Otherwise press me ONCE.',
+    requiredPresses: 1, show: '🐈' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, press me TWICE. Otherwise press me ONCE.',
+    requiredPresses: 2, show: '🐀' },
+
+  /* ---- Chapter 4: mixed rules ---- */
+  { kind: 'normal', prompt: 'If you see 🍎, press me ONCE. Otherwise don\'t press.',
+    requiredPresses: 1, show: '🍎' },
+  { kind: 'normal', prompt: 'If you see 🍎, press me ONCE. Otherwise don\'t press.',
+    requiredPresses: 0, show: '🍌' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, don\'t press. If you see anything else, press me TWICE.',
+    requiredPresses: 2, show: '🐈' },
+  { kind: 'normal', prompt: 'If you see a rat 🐀, don\'t press. If you see anything else, press me TWICE.',
+    requiredPresses: 0, show: '🐀' },
+
+  /* ---- Chapter 5: sequences with emoji ---- */
+  { kind: 'normal', prompt: 'If the sequence contains a rat 🐀, don\'t press.',
+    requiredPresses: 0, sequence: ['🍎', '🐈', '🐀', '🍌'] },
+  { kind: 'normal', prompt: 'If the sequence contains a rat 🐀, don\'t press. Otherwise press me ONCE.',
+    requiredPresses: 1, sequence: ['🍎', '🐈', '🍌', '🍎'] },
+
+  /* ---- Dilemma ---- */
   {
     kind: 'dilemma',
     prompt: 'Press me if the letter is D. Do not press if it is not. One of these is always wrong.',
@@ -41,7 +78,8 @@ const LEVELS = [
 let levelIndex = 0;
 let attempt = 1;
 let phase = 'idle';
-let clickedThisLevel = false;
+let clickCountThisLevel = 0;
+let clicksActive = false;
 let interactionDuringDilemma = false;
 let gameStartTime = null;
 let totalClicks = 0;
@@ -62,6 +100,7 @@ const btnEl           = document.getElementById('greenBtn');
 const stageEl         = document.getElementById('stage');
 const panelContentEl  = document.querySelector('.panel-content');
 const letterLayerEl   = document.getElementById('letterLayer');
+const clickDotsEl     = document.getElementById('clickDots');
 const ringFillEl      = document.querySelector('.ring-fill');
 const countdownEl     = document.getElementById('countdown');
 const feedbackEl      = document.getElementById('feedback');
@@ -193,8 +232,7 @@ function clearDenial() {
 }
 
 function spawnDangerMarks() {
-  const count = 8;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 8; i++) {
     const mark = document.createElement('div');
     mark.textContent = '!';
     mark.className = 'danger-mark';
@@ -208,30 +246,58 @@ function spawnDangerMarks() {
 }
 
 /* ============================================================
-   BOUNCING LETTERS — bounce across the WHOLE panel content
+   CLICK DOTS (multi-press progress)
    ============================================================ */
-function spawnBouncingLetter(letter, duration = 2000) {
+function setupClickDots() {
+  if (!clickDotsEl) return;
+  clickDotsEl.innerHTML = '';
+  const level = LEVELS[levelIndex];
+  if (!level || level.kind !== 'normal') return;
+  const required = level.requiredPresses || 0;
+  if (required < 1) return;
+  for (let i = 0; i < required; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'click-dot';
+    clickDotsEl.appendChild(dot);
+  }
+}
+
+function updateClickDots() {
+  if (!clickDotsEl) return;
+  const dots = clickDotsEl.querySelectorAll('.click-dot');
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('filled', i < clickCountThisLevel);
+  });
+}
+
+/* ============================================================
+   BOUNCING ITEMS — letters AND emoji across the whole panel
+   ============================================================ */
+function spawnBouncingLetter(value, duration = 1800) {
   const panelRect = panelContentEl.getBoundingClientRect();
   const panelW = panelRect.width;
   const panelH = panelRect.height;
 
-  // Font size scaled to panel width — smaller than before, fits the bigger area
-  const fontSize = Math.min(56, Math.max(36, panelW * 0.11));
-  const letterR = fontSize * 0.4;
+  // Detect emoji vs single letter and size accordingly
+  const isEmoji = !/^[A-Za-z0-9]$/.test(value);
+  const fontSize = isEmoji
+    ? Math.min(72, Math.max(44, panelW * 0.13))
+    : Math.min(56, Math.max(36, panelW * 0.10));
+  const radius = fontSize * (isEmoji ? 0.45 : 0.40);
 
-  // Button treated as a solid circular obstacle in panel coordinates
+  // Button as a solid circular obstacle
   const btnRect = btnEl.getBoundingClientRect();
   const btnCX = (btnRect.left + btnRect.width / 2) - panelRect.left;
   const btnCY = (btnRect.top + btnRect.height / 2) - panelRect.top;
   const btnR = btnRect.width / 2;
 
-  // Spawn somewhere inside the panel, but outside the button
+  // Spawn inside the panel but outside the button
   let x, y, tries = 0;
   do {
-    x = letterR + 6 + Math.random() * (panelW - 2 * letterR - 12);
-    y = letterR + 6 + Math.random() * (panelH - 2 * letterR - 12);
+    x = radius + 6 + Math.random() * (panelW - 2 * radius - 12);
+    y = radius + 6 + Math.random() * (panelH - 2 * radius - 12);
     tries++;
-  } while (Math.hypot(x - btnCX, y - btnCY) < btnR + letterR + 6 && tries < 40);
+  } while (Math.hypot(x - btnCX, y - btnCY) < btnR + radius + 6 && tries < 40);
 
   // Random direction, deliberate speed
   const angle = Math.random() * Math.PI * 2;
@@ -241,7 +307,7 @@ function spawnBouncingLetter(letter, duration = 2000) {
 
   const el = document.createElement('div');
   el.className = 'bouncing-letter';
-  el.textContent = letter;
+  el.textContent = value;
   el.style.fontSize = fontSize + 'px';
   el.style.left = x + 'px';
   el.style.top = y + 'px';
@@ -266,17 +332,17 @@ function spawnBouncingLetter(letter, duration = 2000) {
     x += vx * dt;
     y += vy * dt;
 
-    // Wall bounce (panel-content edges)
-    if (x < letterR + 4) { x = letterR + 4; vx = Math.abs(vx); }
-    if (x > panelW - letterR - 4) { x = panelW - letterR - 4; vx = -Math.abs(vx); }
-    if (y < letterR + 4) { y = letterR + 4; vy = Math.abs(vy); }
-    if (y > panelH - letterR - 4) { y = panelH - letterR - 4; vy = -Math.abs(vy); }
+    // Wall bounce
+    if (x < radius + 4) { x = radius + 4; vx = Math.abs(vx); }
+    if (x > panelW - radius - 4) { x = panelW - radius - 4; vx = -Math.abs(vx); }
+    if (y < radius + 4) { y = radius + 4; vy = Math.abs(vy); }
+    if (y > panelH - radius - 4) { y = panelH - radius - 4; vy = -Math.abs(vy); }
 
-    // Button collision (reflect off the button's circle)
+    // Button collision
     const dx = x - btnCX;
     const dy = y - btnCY;
     const dist = Math.hypot(dx, dy);
-    const minDist = btnR + letterR;
+    const minDist = btnR + radius;
     if (dist < minDist && dist > 0.001) {
       const nx = dx / dist;
       const ny = dy / dist;
@@ -308,7 +374,7 @@ function clearBouncingLetters() {
 }
 
 /* ============================================================
-   COUNTDOWN RING (visual timer only — judgement is instant)
+   COUNTDOWN RING
    ============================================================ */
 function startCountdownRing(durationMs) {
   if (!ringFillEl) return;
@@ -417,7 +483,8 @@ function startLevel(index) {
   clearAllTimers();
   clearStage();
   clearDenial();
-  clickedThisLevel = false;
+  clickCountThisLevel = 0;
+  clicksActive = false;
   interactionDuringDilemma = false;
   levelIndex = index;
   phase = 'loading';
@@ -425,6 +492,7 @@ function startLevel(index) {
   btnEl.classList.remove('dim', 'shake', 'denied', 'pressed', 'pulse');
   btnEl.textContent = 'PRESS';
   setLed('');
+  setupClickDots();
 
   const level = LEVELS[index];
 
@@ -537,9 +605,18 @@ function onButtonClick() {
   }
 
   if (phase === 'countdown') {
-    // ⚡ INSTANT judgement — no delay
-    clickedThisLevel = true;
-    judge();
+    // Before letters appear, clicks don't count
+    if (!clicksActive) return;
+
+    clickCountThisLevel++;
+    updateClickDots();
+
+    const required = LEVELS[levelIndex].requiredPresses || 0;
+
+    // INSTANT judgement the moment click count reaches target
+    if (clickCountThisLevel >= required) {
+      judge();
+    }
     return;
   }
 }
@@ -579,8 +656,10 @@ function handleDilemmaInteraction() {
 function runCountdown() {
   const level = LEVELS[levelIndex];
   phase = 'countdown';
+  clickCountThisLevel = 0;
+  clicksActive = false;
 
-  // Countdown numbers 3-2-1
+  // 3 - 2 - 1
   let n = 3;
   countdownEl.textContent = n;
   sfxTick();
@@ -595,37 +674,46 @@ function runCountdown() {
     }
   }, 500);
 
-  // Bouncing letters
   const lettersStart = 800;
-  if (level.letter) {
+  let lastVisibleAt = lettersStart;
+
+  // Single item
+  if (level.show) {
+    const dur = 1800;
     trackTimeout(() => {
-      spawnBouncingLetter(level.letter, 2000);
+      clicksActive = true;
+      spawnBouncingLetter(level.show, dur);
       sfxLetter();
     }, lettersStart);
+    lastVisibleAt = lettersStart + dur;
   }
 
+  // Sequence
   if (level.sequence) {
-    level.sequence.forEach((ch, i) => {
+    const step = 500;
+    const dur = 1200;
+    level.sequence.forEach((value, i) => {
       trackTimeout(() => {
-        spawnBouncingLetter(ch, 1800);
+        if (i === 0) clicksActive = true;
+        spawnBouncingLetter(value, dur);
         sfxLetter();
-      }, lettersStart + i * 400);
+      }, lettersStart + i * step);
     });
+    lastVisibleAt = lettersStart + (level.sequence.length - 1) * step + dur;
   }
 
-  // The countdown ring is a VISUAL hint of your window.
-  // Judgement itself fires the instant you click (see onButtonClick).
-  // If you never click, the ring emptying triggers a "no-press" judge.
-  const ringStart = 1500;
-  const ringDuration = level.sequence ? 1400 : 1400;
+  // Ring visual — starts when letters appear, ends just after last item fades
+  const ringStart = lettersStart;
+  const ringEnd = Math.max(lastVisibleAt + 200, lettersStart + 1000);
+  const ringDuration = ringEnd - ringStart;
 
   trackTimeout(() => startCountdownRing(ringDuration), ringStart);
 
+  // If no click / not enough clicks by ring end → judge as-is
   trackTimeout(() => {
     if (phase !== 'countdown') return;
-    // No click in time → judged as "did not press", instantly
     judge();
-  }, ringStart + ringDuration);
+  }, ringEnd);
 }
 
 function judge() {
@@ -636,13 +724,16 @@ function judge() {
   phase = 'judging';
   stopCountdownRing();
 
-  const shouldPress = level.correctAction === 'press';
-  if (clickedThisLevel === shouldPress) {
+  const required = level.requiredPresses || 0;
+  if (clickCountThisLevel === required) {
     passLevel();
   } else {
-    failLevel(shouldPress
-      ? 'You were supposed to press.'
-      : 'You were not supposed to press.');
+    const msg = required === 0
+      ? 'You pressed. You were not supposed to press.'
+      : (clickCountThisLevel < required
+        ? `You pressed ${clickCountThisLevel} time${clickCountThisLevel === 1 ? '' : 's'}. You needed ${required}.`
+        : `You pressed too many times. You needed ${required}.`);
+    failLevel(msg);
   }
 }
 
