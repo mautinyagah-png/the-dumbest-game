@@ -1,13 +1,11 @@
 /* ============================================================
-   ANIMATED BACKGROUND — 3 scenes that cycle with crossfades
-   Scenes: Code rain (slow) → Starfield warp → Aurora waves
+   ANIMATED BACKGROUND — 3 scenes that cycle
    ============================================================ */
 (function () {
   'use strict';
 
   const canvas = document.getElementById('bgCanvas');
   if (!canvas) return;
-
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return;
 
@@ -52,9 +50,7 @@
   }
   window.addEventListener('resize', resize);
 
-  /* ============================================================
-     SCENE 1: SLOW CODE RAIN (real coding words falling)
-     ============================================================ */
+  /* ---------- CODE RAIN (faster than last version) ---------- */
   function createCodeRain() {
     const words = [
       'const', 'let', 'var', 'function', 'return', 'if', 'else',
@@ -66,7 +62,7 @@
       'npm', 'git', 'init', 'main', 'bool', 'int', 'str'
     ];
     const fontSize = 15;
-    const colWidth = 110;
+    const colWidth = 108;
     let cols = 0;
     let drops = [];
 
@@ -76,7 +72,7 @@
       for (let i = 0; i < cols; i++) {
         drops.push({
           y: -Math.random() * H,
-          speed: 18 + Math.random() * 32,
+          speed: 35 + Math.random() * 35,   // 35–70 px/sec
           word: words[Math.floor(Math.random() * words.length)],
         });
       }
@@ -90,7 +86,7 @@
           d.y += d.speed * sec;
           if (d.y > H + 30) {
             d.y = -Math.random() * 300 - 30;
-            d.speed = 18 + Math.random() * 32;
+            d.speed = 35 + Math.random() * 35;
             d.word = words[Math.floor(Math.random() * words.length)];
           }
         }
@@ -114,23 +110,18 @@
     };
   }
 
-  /* ============================================================
-     SCENE 2: STARFIELD WARP
-     ============================================================ */
+  /* ---------- STARFIELD ---------- */
   function createStarfield() {
     let stars = [];
-
     function spawn() {
       const z = Math.random() * 1000 + 1;
       return { x: Math.random() * W - W / 2, y: Math.random() * H - H / 2, z, pz: z };
     }
-
     function onResize() {
       const count = Math.min(220, Math.max(80, Math.floor((W * H) / 7000)));
       stars = [];
       for (let i = 0; i < count; i++) stars.push(spawn());
     }
-
     return {
       onResize,
       update(dt) {
@@ -163,13 +154,10 @@
     };
   }
 
-  /* ============================================================
-     SCENE 3: AURORA WAVES
-     ============================================================ */
+  /* ---------- AURORA ---------- */
   function createAurora() {
     let waves = [];
     let t = 0;
-
     function onResize() {
       waves = [];
       for (let i = 0; i < 5; i++) {
@@ -183,7 +171,6 @@
         });
       }
     }
-
     return {
       onResize,
       update(dt) { t += dt * 0.001; },
@@ -211,9 +198,6 @@
     };
   }
 
-  /* ============================================================
-     SCENE MANAGER
-     ============================================================ */
   scenes = [createCodeRain(), createStarfield(), createAurora()];
   currentScene = scenes[0];
   resize();
@@ -236,7 +220,6 @@
   function loop(now) {
     requestAnimationFrame(loop);
     if (paused) return;
-
     dt = Math.min(now - lastTime, 50);
     lastTime = now;
 
