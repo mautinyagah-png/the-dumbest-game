@@ -1,7 +1,6 @@
 /* ============================================================
    ANIMATED BACKGROUND — 3 scenes that cycle with crossfades
-   Scenes: Matrix code rain → Starfield warp → Aurora waves
-   Theme-aware, respects prefers-reduced-motion, pauses on tab blur
+   Scenes: Code rain (slow) → Starfield warp → Aurora waves
    ============================================================ */
 (function () {
   'use strict';
@@ -12,25 +11,13 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return;
 
-  /* ---------- THEME COLORS ---------- */
   function getColors() {
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     return isDark
-      ? {
-          bg: '#0f0f14',
-          bgRgb: '15, 15, 20',
-          accent: '#3cff7a',
-          accentRgb: '60, 255, 122',
-        }
-      : {
-          bg: '#fdf6e3',
-          bgRgb: '253, 246, 227',
-          accent: '#16a34a',
-          accentRgb: '22, 163, 74',
-        };
+      ? { bg: '#0f0f14', bgRgb: '15, 15, 20', accent: '#3cff7a', accentRgb: '60, 255, 122' }
+      : { bg: '#fdf6e3', bgRgb: '253, 246, 227', accent: '#16a34a', accentRgb: '22, 163, 74' };
   }
 
-  /* ---------- REDUCED MOTION → static fill only ---------- */
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reducedMotion) {
     const fill = () => {
@@ -42,17 +29,15 @@
     fill();
     window.addEventListener('resize', fill);
     new MutationObserver(fill).observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
+      attributes: true, attributeFilter: ['data-theme'],
     });
     return;
   }
 
-  /* ---------- SIZE (DPR aware) ---------- */
-  let W = 0;
-  let H = 0;
+  let W = 0, H = 0;
   let scenes = [];
   let currentScene = null;
+  let dt = 16.67;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -68,23 +53,33 @@
   window.addEventListener('resize', resize);
 
   /* ============================================================
-     SCENE 1: MATRIX CODE RAIN
+     SCENE 1: SLOW CODE RAIN (real coding words falling)
      ============================================================ */
-  function createMatrixRain() {
-    const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>{}[]()=+-*';
-    const fontSize = 18;
+  function createCodeRain() {
+    const words = [
+      'const', 'let', 'var', 'function', 'return', 'if', 'else',
+      'for', 'while', 'class', 'new', 'this', 'async', 'await',
+      'import', 'export', 'try', 'catch', 'throw', 'null',
+      'true', 'false', 'undefined', '=>', '===', '!==',
+      '&&', '||', '{}', '[]', '()', '...', ';', '0x00',
+      'debug', 'commit', 'push', 'pull', 'merge', 'build',
+      'npm', 'git', 'init', 'main', 'bool', 'int', 'str'
+    ];
+    const fontSize = 15;
+    const colWidth = 110;
     let cols = 0;
     let drops = [];
 
     function onResize() {
-      cols = Math.floor(W / fontSize) + 1;
-      while (drops.length < cols) {
+      cols = Math.ceil(W / colWidth) + 1;
+      drops = [];
+      for (let i = 0; i < cols; i++) {
         drops.push({
-          y: Math.random() * H,
-          speed: 40 + Math.random() * 100,
+          y: -Math.random() * H,
+          speed: 18 + Math.random() * 32,
+          word: words[Math.floor(Math.random() * words.length)],
         });
       }
-      while (drops.length > cols) drops.pop();
     }
 
     return {
@@ -93,52 +88,45 @@
         const sec = dt / 1000;
         for (const d of drops) {
           d.y += d.speed * sec;
-          if (d.y > H + fontSize * 2) {
-            d.y = -Math.random() * 300;
-            d.speed = 40 + Math.random() * 100;
+          if (d.y > H + 30) {
+            d.y = -Math.random() * 300 - 30;
+            d.speed = 18 + Math.random() * 32;
+            d.word = words[Math.floor(Math.random() * words.length)];
           }
         }
       },
       draw() {
         const c = getColors();
-        // fade previous frame → builds the trail
-        const fadeAlpha = 1 - Math.pow(0.92, dt / 16.67);
+        const fadeAlpha = 1 - Math.pow(0.94, dt / 16.67);
         ctx.fillStyle = `rgba(${c.bgRgb}, ${fadeAlpha})`;
         ctx.fillRect(0, 0, W, H);
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `600 ${fontSize}px "Courier New", monospace`;
         ctx.textBaseline = 'top';
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 3;
         ctx.shadowColor = c.accent;
         ctx.fillStyle = c.accent;
         for (let i = 0; i < drops.length; i++) {
-          const x = i * fontSize;
-          const ch = chars[Math.floor(Math.random() * chars.length)];
-          ctx.fillText(ch, x, drops[i].y);
+          const x = i * colWidth + 10;
+          ctx.fillText(drops[i].word, x, drops[i].y);
         }
         ctx.shadowBlur = 0;
       },
     };
-    // note: `dt` is captured via closure trick below
   }
 
   /* ============================================================
-     SCENE 2: STARFIELD WARP (tunnel of stars)
+     SCENE 2: STARFIELD WARP
      ============================================================ */
   function createStarfield() {
     let stars = [];
 
     function spawn() {
       const z = Math.random() * 1000 + 1;
-      return {
-        x: Math.random() * W - W / 2,
-        y: Math.random() * H - H / 2,
-        z: z,
-        pz: z,
-      };
+      return { x: Math.random() * W - W / 2, y: Math.random() * H - H / 2, z, pz: z };
     }
 
     function onResize() {
-      const count = Math.min(240, Math.max(80, Math.floor((W * H) / 6000)));
+      const count = Math.min(220, Math.max(80, Math.floor((W * H) / 7000)));
       stars = [];
       for (let i = 0; i < count; i++) stars.push(spawn());
     }
@@ -146,7 +134,7 @@
     return {
       onResize,
       update(dt) {
-        const speed = 320 * (dt / 1000);
+        const speed = 280 * (dt / 1000);
         for (const s of stars) {
           s.pz = s.z;
           s.z -= speed;
@@ -157,7 +145,6 @@
         const c = getColors();
         ctx.fillStyle = c.bg;
         ctx.fillRect(0, 0, W, H);
-        ctx.strokeStyle = c.accent;
         ctx.lineCap = 'round';
         for (const s of stars) {
           const sx = (s.x / s.z) * 400 + W / 2;
@@ -177,7 +164,7 @@
   }
 
   /* ============================================================
-     SCENE 3: AURORA WAVES (layered sine waves with gradient fill)
+     SCENE 3: AURORA WAVES
      ============================================================ */
   function createAurora() {
     let waves = [];
@@ -199,9 +186,7 @@
 
     return {
       onResize,
-      update(dt) {
-        t += dt * 0.001;
-      },
+      update(dt) { t += dt * 0.001; },
       draw() {
         const c = getColors();
         ctx.fillStyle = c.bg;
@@ -229,19 +214,16 @@
   /* ============================================================
      SCENE MANAGER
      ============================================================ */
-  scenes = [createMatrixRain(), createStarfield(), createAurora()];
+  scenes = [createCodeRain(), createStarfield(), createAurora()];
   currentScene = scenes[0];
   resize();
 
-  // dt needs to be visible to matrix rain's draw() for the fade math
-  let dt = 16.67;
-
   let currentSceneIndex = 0;
   let sceneStartTime = performance.now();
-  let transitionState = 'idle'; // idle | out | in
+  let transitionState = 'idle';
   let transitionStart = 0;
   const SCENE_DURATION = 18000;
-  const TRANSITION_DURATION = 800;
+  const TRANSITION_DURATION = 900;
 
   let lastTime = performance.now();
   let paused = false;
@@ -251,11 +233,6 @@
     if (!paused) lastTime = performance.now();
   });
 
-  // Respond to theme changes instantly
-  new MutationObserver(() => {
-    // Scenes read colors fresh each draw, so just nudge a redraw happens naturally
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
   function loop(now) {
     requestAnimationFrame(loop);
     if (paused) return;
@@ -263,13 +240,11 @@
     dt = Math.min(now - lastTime, 50);
     lastTime = now;
 
-    // Handle transitions
     if (transitionState === 'out') {
       const p = (now - transitionStart) / TRANSITION_DURATION;
       if (p >= 1) {
         currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
         currentScene = scenes[currentSceneIndex];
-        // fresh canvas for the new scene
         const c = getColors();
         ctx.fillStyle = c.bg;
         ctx.fillRect(0, 0, W, H);
@@ -285,11 +260,9 @@
       transitionStart = now;
     }
 
-    // Update + draw active scene
     currentScene.update(dt);
     currentScene.draw();
 
-    // Transition overlay (solid bg fade)
     if (transitionState !== 'idle') {
       const p = (now - transitionStart) / TRANSITION_DURATION;
       const alpha = transitionState === 'out' ? p : 1 - p;
