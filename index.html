@@ -14,10 +14,20 @@
   <canvas id="bgCanvas"></canvas>
   <div id="bgOverlay"></div>
 
-  <!-- Game UI -->
+  <!-- Game panel -->
   <div id="game">
+    <div class="panel-decor" aria-hidden="true">
+      <span class="screw tl"></span>
+      <span class="screw tr"></span>
+      <span class="screw bl"></span>
+      <span class="screw br"></span>
+    </div>
+
     <div id="topbar">
-      <span id="attemptLabel">attempt #1</span>
+      <div class="topbar-left">
+        <span class="led" id="statusLed"></span>
+        <span id="attemptLabel">attempt #1</span>
+      </div>
       <div class="topbar-right">
         <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
         <button id="soundToggle" class="icon-btn" aria-label="Toggle sound">🔊</button>
@@ -25,19 +35,21 @@
       </div>
     </div>
 
-    <div id="instruction">Click the green button to begin.</div>
-
-    <div id="stage">
-      <div id="letter"></div>
-      <button id="greenBtn">START</button>
+    <div class="panel-content">
+      <div id="instruction">Click the green button to begin.</div>
+      <div id="stage">
+        <div id="letter"></div>
+        <button id="greenBtn">START</button>
+      </div>
+      <div id="countdown"></div>
+      <div id="feedback"></div>
     </div>
-
-    <div id="countdown"></div>
-    <div id="feedback"></div>
 
     <div id="progress">
       <div id="progressFill"></div>
     </div>
+
+    <div id="denyOverlay" aria-hidden="true"></div>
   </div>
 
   <script src="background.js"></script>
