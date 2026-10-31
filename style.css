@@ -148,7 +148,6 @@ button {
   overflow: hidden;
 }
 
-/* Corner screws */
 .screw {
   position: absolute;
   width: 8px;
@@ -176,9 +175,18 @@ button {
 .screw.bl { bottom: 12px; left: 12px; }
 .screw.br { bottom: 12px; right: 12px; }
 
+/* ⬇ panel-content is now the bounce zone */
 .panel-content {
   position: relative;
   z-index: 2;
+}
+
+/* ⬇ letters now cover the WHOLE panel content, not just the socket */
+#letterLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
 }
 
 /* ============================================================
@@ -284,7 +292,6 @@ button {
   border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
-/* Inner ring highlight on the socket (top edge catches light) */
 #stage::before {
   content: '';
   position: absolute;
@@ -305,13 +312,6 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-#letterLayer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 8;
 }
 
 /* ============================================================
@@ -339,8 +339,8 @@ button {
   stroke: var(--accent);
   stroke-width: 5;
   stroke-linecap: round;
-  stroke-dasharray: 691;    /* 2πr where r=110 */
-  stroke-dashoffset: 691;   /* fully drained initially */
+  stroke-dasharray: 691;
+  stroke-dashoffset: 691;
   transform: rotate(-90deg);
   transform-origin: center;
   filter: drop-shadow(0 0 6px var(--accent));
@@ -392,16 +392,12 @@ button {
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.6),
     0 0 10px rgba(255, 255, 255, 0.25);
-  /* THE 3D DOME + BEZEL */
   box-shadow:
-    /* metallic bezel edge (raised ring) */
     0 8px 0 #041a0a,
     0 10px 0 #071a0b,
-    /* dome highlights */
     inset 0 -10px 18px rgba(0, 0, 0, 0.55),
     inset 0 10px 16px rgba(255, 255, 255, 0.35),
     inset 0 0 0 2px rgba(0, 0, 0, 0.3),
-    /* outer cast shadow + glow */
     0 16px 28px rgba(0, 0, 0, 0.6),
     0 0 44px var(--glow);
   transform: translateY(0);
@@ -409,7 +405,6 @@ button {
 }
 
 #greenBtn::before {
-  /* glossy dome highlight */
   content: '';
   position: absolute;
   top: 12%;
@@ -434,7 +429,6 @@ button {
     0 0 60px var(--glow);
 }
 
-/* PRESSED IN — deep depression */
 #greenBtn:active,
 #greenBtn.pressed {
   transform: translateY(7px);
@@ -502,7 +496,7 @@ button {
     0 2px 4px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   user-select: none;
-  will-change: transform;
+  will-change: transform, left, top;
   z-index: 10;
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
@@ -637,7 +631,6 @@ button {
   85%      { transform: translate(4px, -1px) rotate(0.1deg); }
 }
 
-/* Danger "!" marks */
 .danger-mark {
   position: absolute;
   font-size: 42px;
