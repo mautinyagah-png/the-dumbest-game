@@ -9,6 +9,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- Animated background layers -->
+  <canvas id="bgCanvas"></canvas>
+  <div id="bgOverlay"></div>
+
+  <!-- Game UI -->
   <div id="game">
     <div id="topbar">
       <span id="attemptLabel">attempt #1</span>
@@ -34,6 +40,7 @@
     </div>
   </div>
 
+  <script src="background.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
