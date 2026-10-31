@@ -4,56 +4,19 @@
 const LEVELS = [
   { kind: 'start', prompt: 'Click the green button to begin.' },
 
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D in the next countdown, press me.',
-    correctAction: 'press',
-    letter: 'D',
-    letterAt: 1500,
-    letterDuration: 2000
-  },
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D in the next countdown, press me.',
-    correctAction: 'no-press',
-    letter: 'O',
-    letterAt: 1500,
-    letterDuration: 2000
-  },
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D, press me. Look closely.',
-    correctAction: 'press',
-    letter: 'D',
-    letterAt: 1500,
-    letterDuration: 1500
-  },
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D, press me.',
-    correctAction: 'no-press',
-    letter: 'Q',
-    letterAt: 1500,
-    letterDuration: 2000
-  },
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D, press me. Watch the sequence.',
-    correctAction: 'press',
-    sequence: ['O', 'C', 'D', 'Q'],
-    sequenceStart: 800,
-    sequenceStep: 800,
-    sequenceDuration: 600
-  },
-  {
-    kind: 'normal',
-    prompt: 'If you see the letter D, press me. One more.',
-    correctAction: 'no-press',
-    sequence: ['B', 'O', 'G', 'P'],
-    sequenceStart: 800,
-    sequenceStep: 800,
-    sequenceDuration: 600
-  },
+  { kind: 'normal', prompt: 'If you see the letter D in the next countdown, press me.',
+    correctAction: 'press', letter: 'D' },
+  { kind: 'normal', prompt: 'If you see the letter D in the next countdown, press me.',
+    correctAction: 'no-press', letter: 'O' },
+  { kind: 'normal', prompt: 'If you see the letter D, press me. Look closely.',
+    correctAction: 'press', letter: 'D' },
+  { kind: 'normal', prompt: 'If you see the letter D, press me.',
+    correctAction: 'no-press', letter: 'Q' },
+
+  { kind: 'normal', prompt: 'If you see the letter D, press me. Watch the sequence.',
+    correctAction: 'press', sequence: ['O', 'C', 'D', 'Q'] },
+  { kind: 'normal', prompt: 'If you see the letter D, press me. One more.',
+    correctAction: 'no-press', sequence: ['B', 'O', 'G', 'P'] },
 
   {
     kind: 'dilemma',
@@ -84,8 +47,11 @@ let gameStartTime = null;
 let totalClicks = 0;
 let dilemmaFailCount = 0;
 let trackedTimers = [];
+let activeLetters = [];
+let ringRaf = null;
 
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+const RING_CIRCUMFERENCE = 691; // 2 * π * 110
 
 /* ============================================================
    DOM
@@ -93,10 +59,11 @@ const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
 const gameEl          = document.getElementById('game');
 const instructionEl   = document.getElementById('instruction');
 const btnEl           = document.getElementById('greenBtn');
-const letterEl        = document.getElementById('letter');
+const stageEl         = document.getElementById('stage');
+const letterLayerEl   = document.getElementById('letterLayer');
+const ringFillEl      = document.querySelector('.ring-fill');
 const countdownEl     = document.getElementById('countdown');
 const feedbackEl      = document.getElementById('feedback');
-const stageEl         = document.getElementById('stage');
 const attemptLabelEl  = document.getElementById('attemptLabel');
 const timeLabelEl     = document.getElementById('timeLabel');
 const progressFillEl  = document.getElementById('progressFill');
@@ -105,7 +72,7 @@ const soundToggleEl   = document.getElementById('soundToggle');
 const statusLedEl     = document.getElementById('statusLed');
 
 /* ============================================================
-   SOUND ENGINE (Web Audio API — no files)
+   SOUND ENGINE
    ============================================================ */
 let audioCtx = null;
 let soundEnabled = localStorage.getItem('dumbgame_sound') !== 'off';
@@ -141,21 +108,24 @@ function sfxLetter()     { beep(880, 0.18, 'sine', 0.12); }
 function sfxTick()       { beep(400, 0.07, 'square', 0.05); }
 function sfxSuccess() {
   beep(523, 0.1, 'sine', 0.1);
-  setTimeout(() => beep(659, 0.1, 'sine', 0.1), 90);
-  setTimeout(() => beep(784, 0.16, 'sine', 0.1), 180);
+  setTimeout(() => beep(659, 0.1, 'sine', 0.1), 80);
+  setTimeout(() => beep(784, 0.16, 'sine', 0.1), 160);
 }
 function sfxFail() {
-  beep(220, 0.18, 'sawtooth', 0.1);
-  setTimeout(() => beep(150, 0.28, 'sawtooth', 0.1), 140);
+  // Sharper, louder, angrier
+  beep(280, 0.12, 'sawtooth', 0.14);
+  setTimeout(() => beep(180, 0.18, 'sawtooth', 0.13), 80);
+  setTimeout(() => beep(120, 0.32, 'square', 0.12), 160);
 }
 function sfxDilemmaFail() {
-  beep(200, 0.14, 'sawtooth', 0.09);
-  setTimeout(() => beep(160, 0.14, 'sawtooth', 0.09), 100);
-  setTimeout(() => beep(120, 0.24, 'sawtooth', 0.09), 200);
+  beep(260, 0.12, 'sawtooth', 0.12);
+  setTimeout(() => beep(200, 0.12, 'sawtooth', 0.12), 90);
+  setTimeout(() => beep(140, 0.18, 'sawtooth', 0.12), 180);
+  setTimeout(() => beep(100, 0.3, 'square', 0.11), 270);
 }
 function sfxWin() {
   [523, 659, 784, 1047].forEach((f, i) =>
-    setTimeout(() => beep(f, 0.22, 'sine', 0.1), i * 130)
+    setTimeout(() => beep(f, 0.22, 'sine', 0.1), i * 120)
   );
 }
 
@@ -206,33 +176,170 @@ function setLed(state) {
 }
 
 /* ============================================================
-   DENIAL (called on wrong answer / dilemma touch)
+   DENIAL
    ============================================================ */
 function triggerDenial() {
   gameEl.classList.add('denied');
   btnEl.classList.add('denied');
   setLed('danger');
   spawnDangerMarks();
+}
 
-  setTimeout(() => {
-    gameEl.classList.remove('denied');
-    btnEl.classList.remove('denied');
-    setLed('');
-  }, 800);
+function clearDenial() {
+  gameEl.classList.remove('denied');
+  btnEl.classList.remove('denied');
+  setLed('');
+  stageEl.querySelectorAll('.danger-mark').forEach(m => m.remove());
 }
 
 function spawnDangerMarks() {
-  for (let i = 0; i < 6; i++) {
+  const count = 8;
+  for (let i = 0; i < count; i++) {
     const mark = document.createElement('div');
     mark.textContent = '!';
     mark.className = 'danger-mark';
-    mark.style.left = (10 + Math.random() * 80) + '%';
-    mark.style.top = (10 + Math.random() * 80) + '%';
-    mark.style.fontSize = (28 + Math.random() * 36) + 'px';
-    mark.style.animationDelay = (i * 55) + 'ms';
+    mark.style.left = (5 + Math.random() * 85) + '%';
+    mark.style.top = (5 + Math.random() * 85) + '%';
+    mark.style.fontSize = (28 + Math.random() * 34) + 'px';
+    mark.style.animationDelay = (i * 40) + 'ms';
     stageEl.appendChild(mark);
-    setTimeout(() => mark.remove(), 1500);
+    setTimeout(() => mark.remove(), 1400);
   }
+}
+
+/* ============================================================
+   BOUNCING LETTERS
+   ============================================================ */
+function spawnBouncingLetter(letter, duration = 1600) {
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageW = stageRect.width;
+  const stageH = stageRect.height;
+
+  const fontSize = Math.min(56, Math.max(36, stageW * 0.22));
+  const letterR = fontSize * 0.4;
+
+  // Button as circular obstacle
+  const btnRect = btnEl.getBoundingClientRect();
+  const btnCX = (btnRect.left + btnRect.width / 2) - stageRect.left;
+  const btnCY = (btnRect.top + btnRect.height / 2) - stageRect.top;
+  const btnR = btnRect.width / 2;
+
+  // Spawn outside the button, inside the socket
+  let x, y, tries = 0;
+  do {
+    x = letterR + 10 + Math.random() * (stageW - 2 * letterR - 20);
+    y = letterR + 10 + Math.random() * (stageH - 2 * letterR - 20);
+    tries++;
+  } while (Math.hypot(x - btnCX, y - btnCY) < btnR + letterR + 4 && tries < 30);
+
+  // Random direction, moderate speed
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 180 + Math.random() * 100;
+  let vx = Math.cos(angle) * speed;
+  let vy = Math.sin(angle) * speed;
+
+  const el = document.createElement('div');
+  el.className = 'bouncing-letter';
+  el.textContent = letter;
+  el.style.fontSize = fontSize + 'px';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.transform = 'translate(-50%, -50%)';
+  letterLayerEl.appendChild(el);
+
+  const start = performance.now();
+  let rafId;
+  let last = start;
+
+  function tick(now) {
+    const elapsed = now - start;
+    if (elapsed > duration) {
+      el.remove();
+      activeLetters = activeLetters.filter(l => l.el !== el);
+      return;
+    }
+
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    x += vx * dt;
+    y += vy * dt;
+
+    // Wall bounce
+    if (x < letterR + 4) { x = letterR + 4; vx = Math.abs(vx); }
+    if (x > stageW - letterR - 4) { x = stageW - letterR - 4; vx = -Math.abs(vx); }
+    if (y < letterR + 4) { y = letterR + 4; vy = Math.abs(vy); }
+    if (y > stageH - letterR - 4) { y = stageH - letterR - 4; vy = -Math.abs(vy); }
+
+    // Button collision
+    const dx = x - btnCX;
+    const dy = y - btnCY;
+    const dist = Math.hypot(dx, dy);
+    const minDist = btnR + letterR;
+    if (dist < minDist && dist > 0) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      x = btnCX + nx * minDist;
+      y = btnCY + ny * minDist;
+      const dot = vx * nx + vy * ny;
+      vx -= 2 * dot * nx;
+      vy -= 2 * dot * ny;
+    }
+
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+
+    // Fade out near the end
+    const remaining = duration - elapsed;
+    if (remaining < 300) {
+      el.style.opacity = Math.max(0, remaining / 300).toFixed(2);
+    }
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  rafId = requestAnimationFrame(tick);
+  activeLetters.push({ el, cancel: () => cancelAnimationFrame(rafId) });
+}
+
+function clearBouncingLetters() {
+  activeLetters.forEach(l => { l.cancel(); l.el.remove(); });
+  activeLetters = [];
+}
+
+/* ============================================================
+   COUNTDOWN RING
+   ============================================================ */
+function startCountdownRing(durationMs) {
+  if (!ringFillEl) return;
+  if (ringRaf) cancelAnimationFrame(ringRaf);
+
+  ringFillEl.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ringFillEl.style.strokeDashoffset = 0;
+  ringFillEl.style.opacity = '1';
+
+  const start = performance.now();
+  function update(now) {
+    const p = Math.min((now - start) / durationMs, 1);
+    ringFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE * p;
+    if (p < 1) {
+      ringRaf = requestAnimationFrame(update);
+    } else {
+      ringFillEl.style.opacity = '0';
+    }
+  }
+  ringRaf = requestAnimationFrame(update);
+}
+
+function resetRing() {
+  if (ringRaf) { cancelAnimationFrame(ringRaf); ringRaf = null; }
+  if (!ringFillEl) return;
+  ringFillEl.style.transition = 'none';
+  ringFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
+  ringFillEl.style.opacity = '0';
+  // force reflow to apply transition reset
+  void ringFillEl.getBoundingClientRect();
+  ringFillEl.style.transition = '';
 }
 
 /* ============================================================
@@ -288,10 +395,9 @@ function updateAttempt() { attemptLabelEl.textContent = `attempt #${attempt}`; }
 function setProgress(pct) { progressFillEl.style.width = pct + '%'; }
 function clearStage() {
   countdownEl.textContent = '';
-  letterEl.classList.remove('show');
-  letterEl.textContent = '';
-  // remove any stray danger marks
+  clearBouncingLetters();
   stageEl.querySelectorAll('.danger-mark').forEach(m => m.remove());
+  resetRing();
 }
 function updateProgress(passedCount) {
   if (passedCount <= 0) return;
@@ -306,12 +412,13 @@ function updateProgress(passedCount) {
 function startLevel(index) {
   clearAllTimers();
   clearStage();
+  clearDenial();
   clickedThisLevel = false;
   interactionDuringDilemma = false;
   levelIndex = index;
   phase = 'loading';
   setFeedback('');
-  btnEl.classList.remove('dim', 'shake', 'denied', 'pressed');
+  btnEl.classList.remove('dim', 'shake', 'denied', 'pressed', 'pulse');
   btnEl.textContent = 'PRESS';
   setLed('');
 
@@ -327,7 +434,6 @@ function startLevel(index) {
 
   if (level.kind === 'win') {
     btnEl.classList.add('dim');
-    btnEl.classList.remove('pulse');
     btnEl.textContent = '🟢';
     setInstruction(level.prompt);
     setProgress(100);
@@ -358,7 +464,6 @@ function startLevel(index) {
 
   if (level.kind === 'dilemma') {
     setInstruction(level.prompt);
-    btnEl.classList.remove('pulse');
     phase = 'dilemma-grace';
 
     trackTimeout(() => {
@@ -409,7 +514,6 @@ function onButtonClick() {
   totalClicks++;
   sfxClick();
 
-  // brief pressed-in feel on every click
   btnEl.classList.add('pressed');
   setTimeout(() => btnEl.classList.remove('pressed'), 90);
 
@@ -418,7 +522,7 @@ function onButtonClick() {
     btnEl.classList.remove('pulse');
     const level = LEVELS[levelIndex];
     if (level.kind === 'start') { startLevel(levelIndex + 1); return; }
-    phase = 'countdown-start';
+    phase = 'countdown';
     runCountdown();
     return;
   }
@@ -428,7 +532,7 @@ function onButtonClick() {
     return;
   }
 
-  if (phase === 'countdown' || phase === 'response') {
+  if (phase === 'countdown') {
     clickedThisLevel = true;
     return;
   }
@@ -460,20 +564,20 @@ function handleDilemmaInteraction() {
     attempt++;
     updateAttempt();
     startLevel(levelIndex);
-  }, 1800);
+  }, 1400);
 }
 
 /* ============================================================
-   COUNTDOWN + JUDGEMENT
+   FAST COUNTDOWN + JUDGEMENT
    ============================================================ */
 function runCountdown() {
   const level = LEVELS[levelIndex];
   phase = 'countdown';
 
+  // ---- Countdown numbers 3-2-1 (500ms each = 1.5s) ----
   let n = 3;
   countdownEl.textContent = n;
   sfxTick();
-
   const iv = trackInterval(() => {
     n--;
     if (n > 0) {
@@ -483,47 +587,54 @@ function runCountdown() {
       countdownEl.textContent = '';
       clearInterval(iv);
     }
-  }, 900);
+  }, 500);
 
+  // ---- Spawn bouncing letters ----
+  const lettersStart = 800;
   if (level.letter) {
     trackTimeout(() => {
-      letterEl.textContent = level.letter;
-      letterEl.classList.add('show');
+      spawnBouncingLetter(level.letter, 1800);
       sfxLetter();
-      trackTimeout(
-        () => letterEl.classList.remove('show'),
-        level.letterDuration || 2000
-      );
-    }, level.letterAt || 1500);
+    }, lettersStart);
   }
 
   if (level.sequence) {
     level.sequence.forEach((ch, i) => {
       trackTimeout(() => {
-        letterEl.textContent = ch;
-        letterEl.classList.add('show');
+        spawnBouncingLetter(ch, 1500);
         sfxLetter();
-        trackTimeout(
-          () => letterEl.classList.remove('show'),
-          level.sequenceDuration || 600
-        );
-      }, (level.sequenceStart || 800) + i * (level.sequenceStep || 800));
+      }, lettersStart + i * 400);
     });
   }
 
+  // ---- Countdown ring drains during the reaction window ----
+  const ringStart = 1500;
+  const ringDuration = level.sequence
+    ? (lettersStart + level.sequence.length * 400 + 800 - ringStart)
+    : 1400;
+
+  trackTimeout(() => startCountdownRing(ringDuration), ringStart);
+
+  // ---- Judge fires when ring empties (fast!) ----
   trackTimeout(() => {
-    phase = 'response';
-    trackTimeout(judge, 3000);
-  }, 2700);
+    if (phase !== 'countdown') return;
+    judge();
+  }, ringStart + ringDuration);
 }
 
 function judge() {
-  if (phase !== 'response') return;
-  phase = 'judging';
   const level = LEVELS[levelIndex];
+  if (!level || level.kind !== 'normal') return;
+  phase = 'judging';
+
   const shouldPress = level.correctAction === 'press';
-  if (clickedThisLevel === shouldPress) passLevel();
-  else failLevel(shouldPress ? 'You were supposed to press.' : 'You were not supposed to press.');
+  if (clickedThisLevel === shouldPress) {
+    passLevel();
+  } else {
+    failLevel(shouldPress
+      ? 'You were supposed to press.'
+      : 'You were not supposed to press.');
+  }
 }
 
 function passLevel() {
@@ -532,7 +643,7 @@ function passLevel() {
   setFeedback('✓');
   sfxSuccess();
   updateProgress(levelIndex);
-  trackTimeout(() => startLevel(levelIndex + 1), 900);
+  trackTimeout(() => startLevel(levelIndex + 1), 550);
 }
 
 function failLevel(message) {
@@ -543,7 +654,12 @@ function failLevel(message) {
   setFeedback(message);
   sfxFail();
   triggerDenial();
-  trackTimeout(() => startLevel(levelIndex), 1500);
+
+  // Fast restart — 900ms is enough to feel the red hit
+  trackTimeout(() => {
+    clearDenial();
+    startLevel(levelIndex);
+  }, 900);
 }
 
 /* ============================================================
