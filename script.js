@@ -1,19 +1,5 @@
 /* ============================================================
    LEVELS
-   ------------------------------------------------------------
-   The whole game lives in this array. To add a level, append
-   a new object. Kinds: 'start', 'normal', 'dilemma', 'win'.
-
-   'normal' objects:
-     prompt         → shown to player
-     correctAction  → 'press' or 'no-press'
-     letter/letterAt/letterDuration  → one letter flash (optional)
-     sequence/sequenceStart/sequenceStep → letter sequence (optional)
-
-   'dilemma' objects:
-     prompt         → shown to player
-     duration       → ms the timer runs
-     hints[]        → escalating hint shown on each failed attempt
    ============================================================ */
 const LEVELS = [
   { kind: 'start', prompt: 'Click the green button to begin.' },
@@ -24,7 +10,7 @@ const LEVELS = [
     correctAction: 'press',
     letter: 'D',
     letterAt: 1500,
-    letterDuration: 1200
+    letterDuration: 2000
   },
   {
     kind: 'normal',
@@ -32,7 +18,7 @@ const LEVELS = [
     correctAction: 'no-press',
     letter: 'O',
     letterAt: 1500,
-    letterDuration: 1200
+    letterDuration: 2000
   },
   {
     kind: 'normal',
@@ -40,7 +26,7 @@ const LEVELS = [
     correctAction: 'press',
     letter: 'D',
     letterAt: 1500,
-    letterDuration: 700
+    letterDuration: 1500
   },
   {
     kind: 'normal',
@@ -48,23 +34,25 @@ const LEVELS = [
     correctAction: 'no-press',
     letter: 'Q',
     letterAt: 1500,
-    letterDuration: 1200
+    letterDuration: 2000
   },
   {
     kind: 'normal',
     prompt: 'If you see the letter D, press me. Watch the sequence.',
     correctAction: 'press',
     sequence: ['O', 'C', 'D', 'Q'],
-    sequenceStart: 1000,
-    sequenceStep: 500
+    sequenceStart: 800,
+    sequenceStep: 800,
+    sequenceDuration: 600
   },
   {
     kind: 'normal',
     prompt: 'If you see the letter D, press me. One more.',
     correctAction: 'no-press',
     sequence: ['B', 'O', 'G', 'P'],
-    sequenceStart: 1000,
-    sequenceStep: 500
+    sequenceStart: 800,
+    sequenceStep: 800,
+    sequenceDuration: 600
   },
 
   {
@@ -97,8 +85,10 @@ let totalClicks = 0;
 let dilemmaFailCount = 0;
 let trackedTimers = [];
 
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
 /* ============================================================
-   DOM REFERENCES
+   DOM
    ============================================================ */
 const instructionEl   = document.getElementById('instruction');
 const btnEl           = document.getElementById('greenBtn');
@@ -108,24 +98,115 @@ const feedbackEl      = document.getElementById('feedback');
 const attemptLabelEl  = document.getElementById('attemptLabel');
 const timeLabelEl     = document.getElementById('timeLabel');
 const progressFillEl  = document.getElementById('progressFill');
+const themeToggleEl   = document.getElementById('themeToggle');
+const soundToggleEl   = document.getElementById('soundToggle');
+
+/* ============================================================
+   SOUND ENGINE (Web Audio API — no files needed)
+   ============================================================ */
+let audioCtx = null;
+let soundEnabled = localStorage.getItem('dumbgame_sound') !== 'off';
+
+function initAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function beep(freq, duration, type = 'sine', volume = 0.12) {
+  if (!soundEnabled) return;
+  const ctx = initAudio();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
+}
+
+function sfxClick()      { beep(600, 0.06, 'triangle', 0.1); }
+function sfxLetter()     { beep(880, 0.18, 'sine', 0.12); }
+function sfxTick()       { beep(400, 0.07, 'square', 0.05); }
+function sfxSuccess() {
+  beep(523, 0.1, 'sine', 0.1);
+  setTimeout(() => beep(659, 0.1, 'sine', 0.1), 90);
+  setTimeout(() => beep(784, 0.16, 'sine', 0.1), 180);
+}
+function sfxFail() {
+  beep(220, 0.18, 'sawtooth', 0.1);
+  setTimeout(() => beep(150, 0.28, 'sawtooth', 0.1), 140);
+}
+function sfxDilemmaFail() {
+  beep(200, 0.14, 'sawtooth', 0.09);
+  setTimeout(() => beep(160, 0.14, 'sawtooth', 0.09), 100);
+  setTimeout(() => beep(120, 0.24, 'sawtooth', 0.09), 200);
+}
+function sfxWin() {
+  [523, 659, 784, 1047].forEach((f, i) =>
+    setTimeout(() => beep(f, 0.22, 'sine', 0.1), i * 130)
+  );
+}
+
+function updateSoundIcon() {
+  soundToggleEl.textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+soundToggleEl.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('dumbgame_sound', soundEnabled ? 'on' : 'off');
+  updateSoundIcon();
+  if (soundEnabled) sfxClick();
+});
+
+document.addEventListener('pointerdown', () => { initAudio(); }, { once: true });
+updateSoundIcon();
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggleEl.textContent = theme === 'dark' ? '🌙' : '☀️';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#0f0f14' : '#fdf6e3');
+}
+
+let currentTheme = localStorage.getItem('dumbgame_theme');
+if (!currentTheme) {
+  currentTheme = window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+applyTheme(currentTheme);
+
+themeToggleEl.addEventListener('click', () => {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('dumbgame_theme', currentTheme);
+  applyTheme(currentTheme);
+  sfxClick();
+});
 
 /* ============================================================
    TIMER HELPERS
-   (we track every timeout/interval so we can nuke them all
-    when the level changes — this avoids ghost callbacks)
    ============================================================ */
 function trackTimeout(fn, ms) {
   const id = setTimeout(fn, ms);
   trackedTimers.push({ type: 't', id });
   return id;
 }
-
 function trackInterval(fn, ms) {
   const id = setInterval(fn, ms);
   trackedTimers.push({ type: 'i', id });
   return id;
 }
-
 function clearAllTimers() {
   trackedTimers.forEach(t => {
     if (t.type === 't') clearTimeout(t.id);
@@ -141,16 +222,12 @@ setInterval(updateClock, 1000);
 updateClock();
 
 function updateClock() {
-  if (gameStartTime === null) {
-    timeLabelEl.textContent = '0:00';
-    return;
-  }
+  if (gameStartTime === null) { timeLabelEl.textContent = '0:00'; return; }
   const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
   const m = Math.floor(elapsed / 60);
   const s = elapsed % 60;
   timeLabelEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
 }
-
 function ensureClock() {
   if (gameStartTime === null) gameStartTime = Date.now();
 }
@@ -165,25 +242,14 @@ function setInstruction(text) {
     instructionEl.style.opacity = '1';
   }, 120);
 }
-
-function setFeedback(text) {
-  feedbackEl.textContent = text;
-}
-
-function updateAttempt() {
-  attemptLabelEl.textContent = `attempt #${attempt}`;
-}
-
-function setProgress(pct) {
-  progressFillEl.style.width = pct + '%';
-}
-
+function setFeedback(text) { feedbackEl.textContent = text; }
+function updateAttempt() { attemptLabelEl.textContent = `attempt #${attempt}`; }
+function setProgress(pct) { progressFillEl.style.width = pct + '%'; }
 function clearStage() {
   countdownEl.textContent = '';
   letterEl.classList.remove('show');
   letterEl.textContent = '';
 }
-
 function updateProgress(passedCount) {
   if (passedCount <= 0) return;
   const playable = LEVELS.length - 2;
@@ -207,20 +273,21 @@ function startLevel(index) {
 
   const level = LEVELS[index];
 
-  /* --- START SCREEN --- */
   if (level.kind === 'start') {
     setInstruction(level.prompt);
     btnEl.textContent = 'START';
+    btnEl.classList.add('pulse');
     phase = 'waiting-start';
     return;
   }
 
-  /* --- WIN SCREEN --- */
   if (level.kind === 'win') {
     btnEl.classList.add('dim');
+    btnEl.classList.remove('pulse');
     btnEl.textContent = '🟢';
     setInstruction(level.prompt);
     setProgress(100);
+    sfxWin();
 
     const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
     const m = Math.floor(elapsed / 60);
@@ -238,23 +305,22 @@ function startLevel(index) {
     return;
   }
 
-  /* --- NORMAL LEVEL --- */
   if (level.kind === 'normal') {
     setInstruction(level.prompt);
+    btnEl.classList.add('pulse');
     phase = 'waiting-start';
     return;
   }
 
-  /* --- DILEMMA LEVEL --- */
   if (level.kind === 'dilemma') {
     setInstruction(level.prompt);
+    btnEl.classList.remove('pulse');
     phase = 'dilemma-grace';
 
     trackTimeout(() => {
       if (phase !== 'dilemma-grace') return;
 
-      // If cursor is already on the button when grace ends, they lose.
-      if (btnEl.matches(':hover')) {
+      if (!isTouchDevice && btnEl.matches(':hover')) {
         handleDilemmaInteraction();
         return;
       }
@@ -266,7 +332,12 @@ function startLevel(index) {
 
       trackInterval(() => {
         remaining--;
-        countdownEl.textContent = remaining > 0 ? remaining : '';
+        if (remaining > 0) {
+          countdownEl.textContent = remaining;
+          sfxTick();
+        } else {
+          countdownEl.textContent = '';
+        }
       }, 1000);
 
       trackTimeout(() => {
@@ -274,8 +345,7 @@ function startLevel(index) {
           passLevel();
         }
       }, level.duration);
-    }, 1200);
-
+    }, 1500);
     return;
   }
 }
@@ -286,29 +356,31 @@ function startLevel(index) {
 btnEl.addEventListener('click', onButtonClick);
 btnEl.addEventListener('mouseenter', onButtonEnter);
 
+btnEl.addEventListener('touchstart', () => {
+  if (phase === 'dilemma-grace' || phase === 'dilemma-active') {
+    handleDilemmaInteraction();
+  }
+}, { passive: true });
+
 function onButtonClick() {
   totalClicks++;
+  sfxClick();
 
-  /* start screen / normal-level intro click */
   if (phase === 'waiting-start') {
     ensureClock();
+    btnEl.classList.remove('pulse');
     const level = LEVELS[levelIndex];
-    if (level.kind === 'start') {
-      startLevel(levelIndex + 1);
-      return;
-    }
+    if (level.kind === 'start') { startLevel(levelIndex + 1); return; }
     phase = 'countdown-start';
     runCountdown();
     return;
   }
 
-  /* touching the button during a dilemma = you lose */
   if (phase === 'dilemma-grace' || phase === 'dilemma-active') {
     handleDilemmaInteraction();
     return;
   }
 
-  /* register the click during the countdown/response window */
   if (phase === 'countdown' || phase === 'response') {
     clickedThisLevel = true;
     return;
@@ -330,6 +402,7 @@ function handleDilemmaInteraction() {
   phase = 'dilemma-failing';
   btnEl.classList.add('shake');
   setTimeout(() => btnEl.classList.remove('shake'), 400);
+  sfxDilemmaFail();
 
   const hints = LEVELS[levelIndex].hints;
   const hint = hints[Math.min(dilemmaFailCount - 1, hints.length - 1)];
@@ -339,7 +412,7 @@ function handleDilemmaInteraction() {
     attempt++;
     updateAttempt();
     startLevel(levelIndex);
-  }, 1600);
+  }, 1800);
 }
 
 /* ============================================================
@@ -351,71 +424,67 @@ function runCountdown() {
 
   let n = 3;
   countdownEl.textContent = n;
+  sfxTick();
 
   const iv = trackInterval(() => {
     n--;
     if (n > 0) {
       countdownEl.textContent = n;
+      sfxTick();
     } else {
       countdownEl.textContent = '';
       clearInterval(iv);
     }
-  }, 700);
+  }, 900);
 
-  /* single-letter flash */
   if (level.letter) {
     trackTimeout(() => {
       letterEl.textContent = level.letter;
       letterEl.classList.add('show');
+      sfxLetter();
       trackTimeout(
         () => letterEl.classList.remove('show'),
-        level.letterDuration || 1200
+        level.letterDuration || 2000
       );
     }, level.letterAt || 1500);
   }
 
-  /* letter sequence */
   if (level.sequence) {
     level.sequence.forEach((ch, i) => {
       trackTimeout(() => {
         letterEl.textContent = ch;
         letterEl.classList.add('show');
-        trackTimeout(() => letterEl.classList.remove('show'), 350);
-      }, (level.sequenceStart || 1000) + i * (level.sequenceStep || 500));
+        sfxLetter();
+        trackTimeout(
+          () => letterEl.classList.remove('show'),
+          level.sequenceDuration || 600
+        );
+      }, (level.sequenceStart || 800) + i * (level.sequenceStep || 800));
     });
   }
 
-  /* end of countdown → 2s response window → judge */
   trackTimeout(() => {
     phase = 'response';
-    trackTimeout(judge, 2000);
-  }, 2100);
+    trackTimeout(judge, 3000);
+  }, 2700);
 }
 
 function judge() {
   if (phase !== 'response') return;
   phase = 'judging';
-
   const level = LEVELS[levelIndex];
   const shouldPress = level.correctAction === 'press';
-
-  if (clickedThisLevel === shouldPress) {
-    passLevel();
-  } else {
-    failLevel(
-      shouldPress
-        ? 'You were supposed to press.'
-        : 'You were not supposed to press.'
-    );
-  }
+  if (clickedThisLevel === shouldPress) passLevel();
+  else failLevel(shouldPress ? 'You were supposed to press.' : 'You were not supposed to press.');
 }
 
 function passLevel() {
   phase = 'pass';
   clearAllTimers();
   setFeedback('✓');
+  sfxSuccess();
   updateProgress(levelIndex);
-  trackTimeout(() => startLevel(levelIndex + 1), 800);
+  trackTimeout(() => startLevel(levelIndex + 1), 900);
 }
 
 function failLevel(message) {
@@ -424,9 +493,10 @@ function failLevel(message) {
   attempt++;
   updateAttempt();
   setFeedback(message);
+  sfxFail();
   btnEl.classList.add('shake');
   trackTimeout(() => btnEl.classList.remove('shake'), 400);
-  trackTimeout(() => startLevel(levelIndex), 1200);
+  trackTimeout(() => startLevel(levelIndex), 1400);
 }
 
 /* ============================================================
