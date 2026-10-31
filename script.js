@@ -51,7 +51,7 @@ let activeLetters = [];
 let ringRaf = null;
 
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-const RING_CIRCUMFERENCE = 691; // 2 * π * 110
+const RING_CIRCUMFERENCE = 691;
 
 /* ============================================================
    DOM
@@ -60,6 +60,7 @@ const gameEl          = document.getElementById('game');
 const instructionEl   = document.getElementById('instruction');
 const btnEl           = document.getElementById('greenBtn');
 const stageEl         = document.getElementById('stage');
+const panelContentEl  = document.querySelector('.panel-content');
 const letterLayerEl   = document.getElementById('letterLayer');
 const ringFillEl      = document.querySelector('.ring-fill');
 const countdownEl     = document.getElementById('countdown');
@@ -112,7 +113,6 @@ function sfxSuccess() {
   setTimeout(() => beep(784, 0.16, 'sine', 0.1), 160);
 }
 function sfxFail() {
-  // Sharper, louder, angrier
   beep(280, 0.12, 'sawtooth', 0.14);
   setTimeout(() => beep(180, 0.18, 'sawtooth', 0.13), 80);
   setTimeout(() => beep(120, 0.32, 'square', 0.12), 160);
@@ -208,33 +208,34 @@ function spawnDangerMarks() {
 }
 
 /* ============================================================
-   BOUNCING LETTERS
+   BOUNCING LETTERS — bounce across the WHOLE panel content
    ============================================================ */
-function spawnBouncingLetter(letter, duration = 1600) {
-  const stageRect = stageEl.getBoundingClientRect();
-  const stageW = stageRect.width;
-  const stageH = stageRect.height;
+function spawnBouncingLetter(letter, duration = 2000) {
+  const panelRect = panelContentEl.getBoundingClientRect();
+  const panelW = panelRect.width;
+  const panelH = panelRect.height;
 
-  const fontSize = Math.min(56, Math.max(36, stageW * 0.22));
+  // Font size scaled to panel width — smaller than before, fits the bigger area
+  const fontSize = Math.min(56, Math.max(36, panelW * 0.11));
   const letterR = fontSize * 0.4;
 
-  // Button as circular obstacle
+  // Button treated as a solid circular obstacle in panel coordinates
   const btnRect = btnEl.getBoundingClientRect();
-  const btnCX = (btnRect.left + btnRect.width / 2) - stageRect.left;
-  const btnCY = (btnRect.top + btnRect.height / 2) - stageRect.top;
+  const btnCX = (btnRect.left + btnRect.width / 2) - panelRect.left;
+  const btnCY = (btnRect.top + btnRect.height / 2) - panelRect.top;
   const btnR = btnRect.width / 2;
 
-  // Spawn outside the button, inside the socket
+  // Spawn somewhere inside the panel, but outside the button
   let x, y, tries = 0;
   do {
-    x = letterR + 10 + Math.random() * (stageW - 2 * letterR - 20);
-    y = letterR + 10 + Math.random() * (stageH - 2 * letterR - 20);
+    x = letterR + 6 + Math.random() * (panelW - 2 * letterR - 12);
+    y = letterR + 6 + Math.random() * (panelH - 2 * letterR - 12);
     tries++;
-  } while (Math.hypot(x - btnCX, y - btnCY) < btnR + letterR + 4 && tries < 30);
+  } while (Math.hypot(x - btnCX, y - btnCY) < btnR + letterR + 6 && tries < 40);
 
-  // Random direction, moderate speed
+  // Random direction, deliberate speed
   const angle = Math.random() * Math.PI * 2;
-  const speed = 180 + Math.random() * 100;
+  const speed = 200 + Math.random() * 90;
   let vx = Math.cos(angle) * speed;
   let vy = Math.sin(angle) * speed;
 
@@ -248,8 +249,8 @@ function spawnBouncingLetter(letter, duration = 1600) {
   letterLayerEl.appendChild(el);
 
   const start = performance.now();
-  let rafId;
   let last = start;
+  let rafId;
 
   function tick(now) {
     const elapsed = now - start;
@@ -265,18 +266,18 @@ function spawnBouncingLetter(letter, duration = 1600) {
     x += vx * dt;
     y += vy * dt;
 
-    // Wall bounce
+    // Wall bounce (panel-content edges)
     if (x < letterR + 4) { x = letterR + 4; vx = Math.abs(vx); }
-    if (x > stageW - letterR - 4) { x = stageW - letterR - 4; vx = -Math.abs(vx); }
+    if (x > panelW - letterR - 4) { x = panelW - letterR - 4; vx = -Math.abs(vx); }
     if (y < letterR + 4) { y = letterR + 4; vy = Math.abs(vy); }
-    if (y > stageH - letterR - 4) { y = stageH - letterR - 4; vy = -Math.abs(vy); }
+    if (y > panelH - letterR - 4) { y = panelH - letterR - 4; vy = -Math.abs(vy); }
 
-    // Button collision
+    // Button collision (reflect off the button's circle)
     const dx = x - btnCX;
     const dy = y - btnCY;
     const dist = Math.hypot(dx, dy);
     const minDist = btnR + letterR;
-    if (dist < minDist && dist > 0) {
+    if (dist < minDist && dist > 0.001) {
       const nx = dx / dist;
       const ny = dy / dist;
       x = btnCX + nx * minDist;
@@ -289,7 +290,6 @@ function spawnBouncingLetter(letter, duration = 1600) {
     el.style.left = x + 'px';
     el.style.top = y + 'px';
 
-    // Fade out near the end
     const remaining = duration - elapsed;
     if (remaining < 300) {
       el.style.opacity = Math.max(0, remaining / 300).toFixed(2);
@@ -308,7 +308,7 @@ function clearBouncingLetters() {
 }
 
 /* ============================================================
-   COUNTDOWN RING
+   COUNTDOWN RING (visual timer only — judgement is instant)
    ============================================================ */
 function startCountdownRing(durationMs) {
   if (!ringFillEl) return;
@@ -331,13 +331,17 @@ function startCountdownRing(durationMs) {
   ringRaf = requestAnimationFrame(update);
 }
 
+function stopCountdownRing() {
+  if (ringRaf) { cancelAnimationFrame(ringRaf); ringRaf = null; }
+  if (ringFillEl) ringFillEl.style.opacity = '0';
+}
+
 function resetRing() {
   if (ringRaf) { cancelAnimationFrame(ringRaf); ringRaf = null; }
   if (!ringFillEl) return;
   ringFillEl.style.transition = 'none';
   ringFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
   ringFillEl.style.opacity = '0';
-  // force reflow to apply transition reset
   void ringFillEl.getBoundingClientRect();
   ringFillEl.style.transition = '';
 }
@@ -533,7 +537,9 @@ function onButtonClick() {
   }
 
   if (phase === 'countdown') {
+    // ⚡ INSTANT judgement — no delay
     clickedThisLevel = true;
+    judge();
     return;
   }
 }
@@ -568,13 +574,13 @@ function handleDilemmaInteraction() {
 }
 
 /* ============================================================
-   FAST COUNTDOWN + JUDGEMENT
+   COUNTDOWN + INSTANT JUDGEMENT
    ============================================================ */
 function runCountdown() {
   const level = LEVELS[levelIndex];
   phase = 'countdown';
 
-  // ---- Countdown numbers 3-2-1 (500ms each = 1.5s) ----
+  // Countdown numbers 3-2-1
   let n = 3;
   countdownEl.textContent = n;
   sfxTick();
@@ -589,11 +595,11 @@ function runCountdown() {
     }
   }, 500);
 
-  // ---- Spawn bouncing letters ----
+  // Bouncing letters
   const lettersStart = 800;
   if (level.letter) {
     trackTimeout(() => {
-      spawnBouncingLetter(level.letter, 1800);
+      spawnBouncingLetter(level.letter, 2000);
       sfxLetter();
     }, lettersStart);
   }
@@ -601,31 +607,34 @@ function runCountdown() {
   if (level.sequence) {
     level.sequence.forEach((ch, i) => {
       trackTimeout(() => {
-        spawnBouncingLetter(ch, 1500);
+        spawnBouncingLetter(ch, 1800);
         sfxLetter();
       }, lettersStart + i * 400);
     });
   }
 
-  // ---- Countdown ring drains during the reaction window ----
+  // The countdown ring is a VISUAL hint of your window.
+  // Judgement itself fires the instant you click (see onButtonClick).
+  // If you never click, the ring emptying triggers a "no-press" judge.
   const ringStart = 1500;
-  const ringDuration = level.sequence
-    ? (lettersStart + level.sequence.length * 400 + 800 - ringStart)
-    : 1400;
+  const ringDuration = level.sequence ? 1400 : 1400;
 
   trackTimeout(() => startCountdownRing(ringDuration), ringStart);
 
-  // ---- Judge fires when ring empties (fast!) ----
   trackTimeout(() => {
     if (phase !== 'countdown') return;
+    // No click in time → judged as "did not press", instantly
     judge();
   }, ringStart + ringDuration);
 }
 
 function judge() {
+  if (phase !== 'countdown') return;
   const level = LEVELS[levelIndex];
   if (!level || level.kind !== 'normal') return;
+
   phase = 'judging';
+  stopCountdownRing();
 
   const shouldPress = level.correctAction === 'press';
   if (clickedThisLevel === shouldPress) {
@@ -640,6 +649,7 @@ function judge() {
 function passLevel() {
   phase = 'pass';
   clearAllTimers();
+  stopCountdownRing();
   setFeedback('✓');
   sfxSuccess();
   updateProgress(levelIndex);
@@ -649,13 +659,13 @@ function passLevel() {
 function failLevel(message) {
   phase = 'fail';
   clearAllTimers();
+  stopCountdownRing();
   attempt++;
   updateAttempt();
   setFeedback(message);
   sfxFail();
   triggerDenial();
 
-  // Fast restart — 900ms is enough to feel the red hit
   trackTimeout(() => {
     clearDenial();
     startLevel(levelIndex);
