@@ -4,6 +4,7 @@
 :root,
 [data-theme="dark"] {
   --bg: #0f0f14;
+  --bg-rgb: 15, 15, 20;
   --surface: #1a1a24;
   --text: #e8e8ee;
   --text-dim: #6b6b7a;
@@ -16,10 +17,13 @@
   --progress-bg: #1e1e28;
   --shadow: rgba(0, 0, 0, 0.4);
   --glow: rgba(60, 220, 100, 0.35);
+  --panel-bg: rgba(15, 15, 20, 0.65);
+  --panel-border: rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] {
   --bg: #fdf6e3;
+  --bg-rgb: 253, 246, 227;
   --surface: #ffffff;
   --text: #2a2a35;
   --text-dim: #8888a0;
@@ -32,6 +36,8 @@
   --progress-bg: #f0e6d0;
   --shadow: rgba(80, 60, 20, 0.15);
   --glow: rgba(34, 197, 94, 0.35);
+  --panel-bg: rgba(253, 246, 227, 0.7);
+  --panel-border: rgba(0, 0, 0, 0.06);
 }
 
 /* ============================================================
@@ -57,6 +63,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -67,17 +74,52 @@ button {
 }
 
 /* ============================================================
-   GAME CONTAINER
+   BACKGROUND LAYERS
+   ============================================================ */
+#bgCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
+#bgOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.45) 100%);
+  transition: background 0.3s ease;
+}
+
+[data-theme="light"] #bgOverlay {
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+/* ============================================================
+   GAME PANEL
    ============================================================ */
 #game {
   width: 100%;
-  max-width: 560px;
-  padding: max(24px, env(safe-area-inset-top)) 24px
-           max(24px, env(safe-area-inset-bottom));
+  max-width: 520px;
+  padding: 44px 22px 28px;
   text-align: center;
   position: relative;
+  z-index: 2;
+  background: var(--panel-bg);
+  border-radius: 24px;
+  border: 1px solid var(--panel-border);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   user-select: none;
   -webkit-user-select: none;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* ============================================================
@@ -85,13 +127,13 @@ button {
    ============================================================ */
 #topbar {
   position: absolute;
-  top: 16px;
-  left: 24px;
-  right: 24px;
+  top: 12px;
+  left: 20px;
+  right: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
   letter-spacing: 0.5px;
   gap: 12px;
@@ -100,16 +142,16 @@ button {
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .icon-btn {
   background: transparent;
   border: none;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
-  padding: 6px;
+  padding: 5px;
   border-radius: 8px;
   transition: background 0.2s;
   color: var(--text);
@@ -123,15 +165,15 @@ button {
    INSTRUCTION
    ============================================================ */
 #instruction {
-  min-height: 90px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.5;
   color: var(--text);
-  margin-bottom: 24px;
-  padding: 0 8px;
+  margin-bottom: 20px;
+  padding: 0 6px;
   transition: opacity 0.3s;
 }
 
@@ -140,21 +182,21 @@ button {
    ============================================================ */
 #stage {
   position: relative;
-  height: min(220px, 38vh);
+  height: min(180px, 30vh);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 #greenBtn {
-  width: min(150px, 40vw);
-  height: min(150px, 40vw);
+  width: min(140px, 38vw);
+  height: min(140px, 38vw);
   border-radius: 50%;
   border: none;
   background: radial-gradient(circle at 30% 30%, var(--accent-light), var(--accent-dark));
   color: #062a0f;
-  font-size: min(15px, 3.6vw);
+  font-size: min(14px, 3.4vw);
   font-weight: 800;
   letter-spacing: 1.5px;
   cursor: pointer;
@@ -200,7 +242,7 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: min(140px, 34vw);
+  font-size: min(130px, 32vw);
   font-weight: 900;
   color: var(--letter);
   text-shadow:
@@ -221,21 +263,21 @@ button {
    COUNTDOWN + FEEDBACK
    ============================================================ */
 #countdown {
-  font-size: min(42px, 11vw);
+  font-size: min(38px, 10vw);
   font-weight: 700;
   color: var(--countdown);
-  min-height: 54px;
+  min-height: 44px;
   letter-spacing: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 #feedback {
-  min-height: 60px;
-  font-size: 14px;
+  min-height: 50px;
+  font-size: 13px;
   color: var(--text-mute);
   font-style: italic;
   line-height: 1.55;
-  padding: 0 8px;
+  padding: 0 6px;
   transition: opacity 0.3s;
 }
 
@@ -245,8 +287,8 @@ button {
 #progress {
   position: absolute;
   bottom: 8px;
-  left: 24px;
-  right: 24px;
+  left: 20px;
+  right: 20px;
   height: 3px;
   background: var(--progress-bg);
   border-radius: 2px;
@@ -292,10 +334,11 @@ button {
    MOBILE TWEAKS
    ============================================================ */
 @media (max-width: 480px) {
-  #instruction { font-size: 16px; min-height: 80px; }
-  #topbar { font-size: 12px; top: 12px; left: 16px; right: 16px; }
-  #game { padding-left: 16px; padding-right: 16px; }
+  #instruction { font-size: 15px; min-height: 60px; margin-bottom: 16px; }
+  #topbar { font-size: 11px; top: 10px; left: 16px; right: 16px; }
+  #game { padding: 40px 16px 24px; }
   #progress { left: 16px; right: 16px; }
+  #feedback { font-size: 12px; }
 }
 
 /* ============================================================
