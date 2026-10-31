@@ -10,18 +10,14 @@
 </head>
 <body>
 
-  <!-- Animated background layers -->
   <canvas id="bgCanvas"></canvas>
   <div id="bgOverlay"></div>
 
-  <!-- Game panel -->
   <div id="game">
-    <div class="panel-decor" aria-hidden="true">
-      <span class="screw tl"></span>
-      <span class="screw tr"></span>
-      <span class="screw bl"></span>
-      <span class="screw br"></span>
-    </div>
+    <span class="screw tl"></span>
+    <span class="screw tr"></span>
+    <span class="screw bl"></span>
+    <span class="screw br"></span>
 
     <div id="topbar">
       <div class="topbar-left">
@@ -37,10 +33,21 @@
 
     <div class="panel-content">
       <div id="instruction">Click the green button to begin.</div>
+
       <div id="stage">
-        <div id="letter"></div>
-        <button id="greenBtn">START</button>
+        <div id="socketInner">
+          <svg id="countdownRing" viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="ring-bg" cx="120" cy="120" r="110"/>
+            <circle class="ring-fill" cx="120" cy="120" r="110"/>
+          </svg>
+          <div class="btn-warning-ring"></div>
+          <button id="greenBtn">
+            <span class="btn-face">PRESS</span>
+          </button>
+        </div>
+        <div id="letterLayer" aria-hidden="true"></div>
       </div>
+
       <div id="countdown"></div>
       <div id="feedback"></div>
     </div>
@@ -50,6 +57,7 @@
     </div>
 
     <div id="denyOverlay" aria-hidden="true"></div>
+    <div id="denyX" aria-hidden="true">✕</div>
   </div>
 
   <script src="background.js"></script>
