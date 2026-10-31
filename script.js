@@ -90,16 +90,19 @@ const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
 /* ============================================================
    DOM
    ============================================================ */
+const gameEl          = document.getElementById('game');
 const instructionEl   = document.getElementById('instruction');
 const btnEl           = document.getElementById('greenBtn');
 const letterEl        = document.getElementById('letter');
 const countdownEl     = document.getElementById('countdown');
 const feedbackEl      = document.getElementById('feedback');
+const stageEl         = document.getElementById('stage');
 const attemptLabelEl  = document.getElementById('attemptLabel');
 const timeLabelEl     = document.getElementById('timeLabel');
 const progressFillEl  = document.getElementById('progressFill');
 const themeToggleEl   = document.getElementById('themeToggle');
 const soundToggleEl   = document.getElementById('soundToggle');
+const statusLedEl     = document.getElementById('statusLed');
 
 /* ============================================================
    SOUND ENGINE (Web Audio API — no files)
@@ -195,6 +198,44 @@ themeToggleEl.addEventListener('click', () => {
 });
 
 /* ============================================================
+   LED
+   ============================================================ */
+function setLed(state) {
+  if (!statusLedEl) return;
+  statusLedEl.className = 'led' + (state ? ' ' + state : '');
+}
+
+/* ============================================================
+   DENIAL (called on wrong answer / dilemma touch)
+   ============================================================ */
+function triggerDenial() {
+  gameEl.classList.add('denied');
+  btnEl.classList.add('denied');
+  setLed('danger');
+  spawnDangerMarks();
+
+  setTimeout(() => {
+    gameEl.classList.remove('denied');
+    btnEl.classList.remove('denied');
+    setLed('');
+  }, 800);
+}
+
+function spawnDangerMarks() {
+  for (let i = 0; i < 6; i++) {
+    const mark = document.createElement('div');
+    mark.textContent = '!';
+    mark.className = 'danger-mark';
+    mark.style.left = (10 + Math.random() * 80) + '%';
+    mark.style.top = (10 + Math.random() * 80) + '%';
+    mark.style.fontSize = (28 + Math.random() * 36) + 'px';
+    mark.style.animationDelay = (i * 55) + 'ms';
+    stageEl.appendChild(mark);
+    setTimeout(() => mark.remove(), 1500);
+  }
+}
+
+/* ============================================================
    TIMER HELPERS
    ============================================================ */
 function trackTimeout(fn, ms) {
@@ -249,6 +290,8 @@ function clearStage() {
   countdownEl.textContent = '';
   letterEl.classList.remove('show');
   letterEl.textContent = '';
+  // remove any stray danger marks
+  stageEl.querySelectorAll('.danger-mark').forEach(m => m.remove());
 }
 function updateProgress(passedCount) {
   if (passedCount <= 0) return;
@@ -268,8 +311,9 @@ function startLevel(index) {
   levelIndex = index;
   phase = 'loading';
   setFeedback('');
-  btnEl.classList.remove('dim', 'shake');
+  btnEl.classList.remove('dim', 'shake', 'denied', 'pressed');
   btnEl.textContent = 'PRESS';
+  setLed('');
 
   const level = LEVELS[index];
 
@@ -355,7 +399,6 @@ function startLevel(index) {
    ============================================================ */
 btnEl.addEventListener('click', onButtonClick);
 btnEl.addEventListener('mouseenter', onButtonEnter);
-
 btnEl.addEventListener('touchstart', () => {
   if (phase === 'dilemma-grace' || phase === 'dilemma-active') {
     handleDilemmaInteraction();
@@ -365,6 +408,10 @@ btnEl.addEventListener('touchstart', () => {
 function onButtonClick() {
   totalClicks++;
   sfxClick();
+
+  // brief pressed-in feel on every click
+  btnEl.classList.add('pressed');
+  setTimeout(() => btnEl.classList.remove('pressed'), 90);
 
   if (phase === 'waiting-start') {
     ensureClock();
@@ -403,6 +450,7 @@ function handleDilemmaInteraction() {
   btnEl.classList.add('shake');
   setTimeout(() => btnEl.classList.remove('shake'), 400);
   sfxDilemmaFail();
+  triggerDenial();
 
   const hints = LEVELS[levelIndex].hints;
   const hint = hints[Math.min(dilemmaFailCount - 1, hints.length - 1)];
@@ -494,9 +542,8 @@ function failLevel(message) {
   updateAttempt();
   setFeedback(message);
   sfxFail();
-  btnEl.classList.add('shake');
-  trackTimeout(() => btnEl.classList.remove('shake'), 400);
-  trackTimeout(() => startLevel(levelIndex), 1400);
+  triggerDenial();
+  trackTimeout(() => startLevel(levelIndex), 1500);
 }
 
 /* ============================================================
